@@ -1,21 +1,22 @@
 #!/usr/bin/env bash
 # Lance toutes les vérifications du repo (CLAUDE.md, règle 4).
-# Usage : bash check.sh [--web] [--pipelines] [--db]   (sans option : tout)
+# Usage : bash check.sh [--web] [--pipelines] [--db] [--reuse]   (sans option : tout)
 # Chaque étape est lancée même si une précédente échoue ; le récapitulatif final
 # indique OK, ÉCHEC ou NON LANCÉ, et le code de sortie est non nul si une étape n'est pas OK.
 set -uo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/scripts/lib.sh"
 cd "$REPO_ROOT"
 
-run_web=0 run_pipelines=0 run_db=0
+run_web=0 run_pipelines=0 run_db=0 run_reuse=0
 if [ "$#" -eq 0 ]; then
-  run_web=1 run_pipelines=1 run_db=1
+  run_web=1 run_pipelines=1 run_db=1 run_reuse=1
 fi
 for arg in "$@"; do
   case "$arg" in
     --web) run_web=1 ;;
     --pipelines) run_pipelines=1 ;;
     --db) run_db=1 ;;
+    --reuse) run_reuse=1 ;;
     *) echo "Option inconnue : $arg" >&2; exit 2 ;;
   esac
 done
@@ -117,6 +118,17 @@ if [ "$run_db" -eq 1 ]; then
     step "db : migrations sur une base jetable" migrate_check_db
   else
     record "ÉCHEC" "db : Docker absent ou arrêté, migrations non vérifiées"
+  fi
+fi
+
+# --- Licences ---------------------------------------------------------------
+# Conformité à la spécification REUSE (ADR 0011). L'outil est épinglé ; l'extra
+# charset-normalizer évite de dépendre de libmagic, absente sous Windows.
+if [ "$run_reuse" -eq 1 ]; then
+  if command -v uv >/dev/null; then
+    step "licences : conformité REUSE" uvx --from "reuse[charset-normalizer]==6.2.0" reuse lint
+  else
+    skip "licences" "uv absent"
   fi
 fi
 

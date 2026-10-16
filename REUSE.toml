@@ -1,0 +1,37 @@
+# Licences du dépôt, selon la spécification REUSE 3.3 (ADR 0011).
+# Quand plusieurs tables couvrent un même fichier, seule la dernière s'applique :
+# l'ordre des tables va donc du plus général au plus particulier.
+version = 1
+
+# Le code et tout ce qui n'est pas couvert plus bas.
+[[annotations]]
+path = "**"
+SPDX-FileCopyrightText = "2026 Les contributeurs de l'atlas <https://github.com/Lukianos76/atlas>"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+# La documentation.
+[[annotations]]
+path = "docs/**"
+SPDX-FileCopyrightText = "2026 Les contributeurs de l'atlas <https://github.com/Lukianos76/atlas>"
+SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+# Les extraits de test gardent la licence de leur source (CLAUDE.md, règle 7).
+# Cette table ne leur attribue volontairement aucune licence : un extrait ajouté
+# sans sa propre table ci-dessous fait échouer `reuse lint`.
+[[annotations]]
+path = "pipelines/tests/fixtures/**"
+
+[[annotations]]
+path = "pipelines/tests/fixtures/README.md"
+SPDX-FileCopyrightText = "2026 Les contributeurs de l'atlas <https://github.com/Lukianos76/atlas>"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+# Une table par extrait, à la suite, sur ce modèle :
+#
+# [[annotations]]
+# path = "pipelines/tests/fixtures/<extrait>"
+# SPDX-FileCopyrightText = "<producteur de la source>"
+# SPDX-License-Identifier = "<identifiant SPDX de la licence de la source>"
+# SPDX-FileComment = "<œuvre, version ou millésime, localisateur>"
+#
+# Le texte de la licence est ajouté dans LICENSES/ (`reuse download <identifiant>`).

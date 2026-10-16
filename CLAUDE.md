@@ -22,7 +22,7 @@ Monorepo (ADR 0005). Node 26 (`.node-version`), Python 3.14 (`pipelines/.python-
 | Base de développement : recréer | `bash scripts/db-dev-reset.sh` |
 | Nouvelle migration | `docker compose run --rm dbmate-dev new <nom>` |
 | Base de référence : migrer (sur `main` uniquement) | `bash scripts/db-ref-migrate.sh` |
-| **Tout vérifier** | `bash check.sh` (ou `--web`, `--pipelines`, `--db`) |
+| **Tout vérifier** | `bash check.sh` (ou `--web`, `--pipelines`, `--db`, `--reuse`) |
 
 Un hook Claude Code (`.claude/settings.json`) formate et lint chaque fichier modifié : Biome sous `apps/web`, Ruff sous `pipelines`.
 
@@ -35,7 +35,7 @@ Un hook Claude Code (`.claude/settings.json`) formate et lint chaque fichier mod
 5. **Langue du code.** Les identifiants sont en anglais, selon le glossaire `docs/glossaire.md`. Un terme du modèle absent du glossaire n'est pas traduit à la volée : sa traduction est proposée pour ajout au glossaire. Commentaires et documentation en français.
 6. **Migrations immuables, en avant uniquement, deux bases.** Une migration appliquée ne se modifie jamais ; toute évolution du schéma passe par une nouvelle migration. Les migrations vont en avant uniquement : la section `-- migrate:down` reste vide, et une correction de schéma passe toujours par une nouvelle migration. La **base de référence** (données importées et validées) n'est migrée que depuis `main` (`scripts/db-ref-migrate.sh`) ; les branches n'utilisent que la **base de développement**, jetable, recréée par `scripts/db-dev-reset.sh`. Voir l'ADR 0010.
 7. **Rien de lourd ni de secret dans git.** Ni données (fichiers sources, exports, archives de tuiles), ni secrets. Les fichiers de test sont de petits extraits, avec leur source.
-8. **Une branche par tâche.** Aucun commit direct sur la branche principale.
+8. **Une branche par tâche.** Aucun commit direct sur la branche principale. Chaque commit porte la ligne `Signed-off-by` du DCO (`git commit -s`, ADR 0011).
 
 ## Documents de référence
 
@@ -59,6 +59,7 @@ Lire le document concerné **avant** de travailler sur le sujet. Leur contenu n'
 | Front React, Vite, outillage, curseur temporel | `docs/adr/0008-framework-outillage-front.md` |
 | Fichiers de valeurs Parquet et manifeste | `docs/adr/0009-format-fichiers-valeurs.md` |
 | Outil et règles de migrations, deux bases | `docs/adr/0010-outil-migrations.md` |
+| Licences du code et de la documentation, REUSE, DCO | `docs/adr/0011-licence-du-code.md` |
 | Sources de géométries historiques (Bas-Rhin) | `docs/recherches/sources-geometries-historiques.md` |
 | Correspondance des termes du modèle en anglais | `docs/glossaire.md` |
 | Tâches identifiées, non engagées | `docs/backlog.md` |
