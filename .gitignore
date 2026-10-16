@@ -1,0 +1,32 @@
+# Règle 7 de CLAUDE.md : ni données ni secrets dans git.
+# Les données sont exclues par emplacement, pas par extension : les tables
+# déclaratives versionnées (correspondances, couleurs, mappings) peuvent être
+# des CSV ou des JSON commités. Les extraits de test vivent dans */tests/fixtures/.
+
+# --- Données (sources téléchargées, extraits locaux) ---
+data/
+
+# --- Sorties de génération ---
+tiles/build/
+pipelines/output/
+apps/web/dist/
+
+# --- Secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Outillage TypeScript ---
+node_modules/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# --- Outillage Python ---
+.venv/
+__pycache__/
+.ruff_cache/
+.pytest_cache/
+
+# --- Réglages locaux ---
+.claude/settings.local.json
