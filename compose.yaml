@@ -30,10 +30,14 @@ services:
       POSTGRES_USER: ${ATLAS_REF_USER:?voir .env.example}
       POSTGRES_PASSWORD: ${ATLAS_REF_PASSWORD:?voir .env.example}
       POSTGRES_DB: ${ATLAS_REF_DB:?voir .env.example}
+    # Mot de passe exigé pour toute connexion, y compris locale dans le conteneur
+    # (docs/schema.md, §5.13) : pg_hba.conf versionné, monté en lecture seule.
+    command: ["postgres", "-c", "hba_file=/etc/postgresql/pg_hba.conf"]
     ports:
       - "127.0.0.1:${ATLAS_REF_PORT:-5432}:5432"
     volumes:
       - atlas-ref:/var/lib/postgresql
+      - ./db/pg_hba-ref.conf:/etc/postgresql/pg_hba.conf:ro
 
   db-dev:
     <<: *postgis

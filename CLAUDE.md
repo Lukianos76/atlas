@@ -36,6 +36,7 @@ Un hook Claude Code (`.claude/settings.json`) formate et lint chaque fichier mod
 6. **Migrations immuables, en avant uniquement, deux bases.** Une migration appliquée ne se modifie jamais ; toute évolution du schéma passe par une nouvelle migration. Les migrations vont en avant uniquement : la section `-- migrate:down` reste vide, et une correction de schéma passe toujours par une nouvelle migration. La **base de référence** (données importées et validées) n'est migrée que depuis `main` (`scripts/db-ref-migrate.sh`) ; les branches n'utilisent que la **base de développement**, jetable, recréée par `scripts/db-dev-reset.sh`. Voir l'ADR 0010.
 7. **Rien de lourd ni de secret dans git.** Ni données (fichiers sources, exports, archives de tuiles), ni secrets. Les fichiers de test sont de petits extraits, avec leur source.
 8. **Une branche par tâche.** Aucun commit direct sur la branche principale. Chaque commit porte la ligne `Signed-off-by` du DCO (`git commit -s`, ADR 0011).
+9. **Séparation des rôles.** Claude Code et les pipelines se connectent à la base de référence avec un rôle d'import : ils insèrent et proposent, ils ne valident jamais un lot ni une assertion. Seul un rôle de vérification, propre à un contributeur humain, passe un lot ou une assertion à `validated`. Ses identifiants, comme ceux du superutilisateur et du propriétaire du schéma, ne figurent jamais dans le `.env` ni dans un fichier lisible par les pipelines ou par Claude Code. Le contributeur enregistré est celui du rôle de connexion (`current_user`), jamais une valeur déclarée. Voir `docs/schema.md` §5.13.
 
 ## Documents de référence
 
@@ -52,6 +53,7 @@ Lire le document concerné **avant** de travailler sur le sujet. Leur contenu n'
 | Rendu cartographique (MapLibre 6) | `docs/adr/0001-bibliotheque-rendu-cartographique.md` |
 | Aplats, cercles proportionnels, flux et densités (deck.gl) | `docs/adr/0002-couche-visualisation-donnees.md` |
 | Schéma PostGIS, jours juliens, bornes floues, contraintes temporelles | `docs/adr/0003-base-de-donnees-spatiale.md` |
+| Schéma logique de la tranche 1 : tables, contraintes, révisions, rôles | `docs/schema.md` |
 | Tuiles, publications, Tippecanoe, contrôles d'export | `docs/adr/0004-tuiles-vectorielles.md` |
 | Organisation du monorepo | `docs/adr/0005-structure-du-repo.md` |
 | Pipelines Python et moteurs natifs | `docs/adr/0006-langage-pipelines-import.md` |
