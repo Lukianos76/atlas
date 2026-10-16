@@ -1020,7 +1020,10 @@ Le choix du point de vue par défaut et de son rendu (hachures, libellé) est un
 ### 14.2 Questions ouvertes
 
 Les questions sont classées selon leur effet sur les premières tranches de données :
-- **tranche 1** : population communale du Bas-Rhin, recensements français depuis 1968, sur la géographie communale du COG et son historique ;
+- **tranche 1** : population communale du Bas-Rhin, recensements français depuis 1968, sur la géographie communale du COG et son historique. Périmètre géométrique :
+  - les observations originales restent rattachées aux communes de chaque époque (§8.3), mais **sans géométrie historique** : aucune source officielle et ouverte ne donne les contours communaux du Bas-Rhin à chaque recensement depuis 1968 (`docs/recherches/sources-geometries-historiques.md`) ;
+  - la première carte utilise la **géographie courante** : les contours d'ADMIN EXPRESS (IGN, édition récente) et les séries de l'INSEE en géographie courante, importées comme **dérivations externes** et contrôlées par le recalcul via le graphe de filiation (§8.4, Q13) ;
+  - l'interface indique clairement que les valeurs passées portent sur le **territoire des communes actuelles** ;
 - **tranche 2** : la période 1871–1918.
 
 Les numéros des questions sont conservés d'une version à l'autre.

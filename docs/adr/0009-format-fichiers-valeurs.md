@@ -1,6 +1,6 @@
 # ADR 0009 — Format des fichiers de valeurs
 
-- **Statut** : proposé
+- **Statut** : accepté
 - **Date** : 2026-10-16
 
 ## Contexte
@@ -27,9 +27,9 @@ Vérification faite avec Context7 (octobre 2026) : **hyparquet** lit le Parquet 
 
 ## Décision
 
-*En attente de validation.* Option recommandée : **A, Parquet avec un manifeste JSON par publication**.
+On retient **Parquet, avec un manifeste JSON par publication**.
 
-Organisation recommandée d'une publication :
+Organisation d'une publication :
 
 - **`publication.json`** (manifeste) : identifiant de publication, point de vue, date d'enregistrement R, période couverte, liste des fichiers (archive PMTiles comprise) avec leur empreinte SHA-256, licences ;
 - **un fichier Parquet de valeurs par variable**, trié par identifiant d'entité puis par date. Colonnes : identifiant d'entité, période de référence, membres des dimensions, valeur, marge, nature (originale ou dérivée), référence de citation ;
@@ -37,9 +37,8 @@ Organisation recommandée d'une publication :
 
 ## Conséquences
 
-Si l'option recommandée est retenue :
-
 - le navigateur ne télécharge que les variables et les plages utiles, ce qui garde le chargement léger à l'échelle mondiale ;
+- à l'échelle mondiale, les entités devront être **triées selon un ordre spatial** (courbe de Hilbert ou équivalent) plutôt que par identifiant, pour qu'une lecture partielle reste efficace sur la zone affichée : les entités voisines tombent alors dans les mêmes blocs de lignes. Rien n'est à implémenter pour la tranche 1 ;
 - les empreintes du manifeste permettent de vérifier qu'une publication citée n'a pas changé (§10.4) ;
 - les pipelines produisent les fichiers avec Polars ou DuckDB, sans outillage supplémentaire ;
 - le schéma exact des colonnes (types, encodage des périodes et des membres, taille des blocs de lignes) reste à fixer avec la première publication de la tranche 1 ;

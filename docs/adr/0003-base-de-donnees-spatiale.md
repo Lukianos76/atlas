@@ -48,7 +48,7 @@ Les dates historiques sont stockées en **jour julien entier** (`int4`), et non 
 
 ### Dates floues
 
-Une période porte **quatre bornes entières** : début au plus tôt, début au plus tard, fin au plus tôt, fin au plus tard. Une borne ouverte vaut `NULL`.
+Une période porte **quatre bornes entières** : début au plus tôt, début au plus tard, fin au plus tôt, fin au plus tard. Le sens d'une borne `NULL` dépend de la **nature** de la borne (ci-dessous) : un `NULL` seul ne suffit jamais à conclure.
 
 Deux intervalles en sont **calculés et stockés** (colonnes générées, indexables) :
 
@@ -56,6 +56,21 @@ Deux intervalles en sont **calculés et stockés** (colonnes générées, indexa
 - l'**extension maximale** `[début au plus tôt, fin au plus tard[`, où il est possible.
 
 Les contraintes d'exclusion portent sur le **noyau**. Deux états successifs séparés par une transition floue (par exemple l'été 1940) ont des extensions maximales qui se chevauchent légitimement : ce chevauchement est contrôlé comme une anomalie, pas refusé.
+
+### Nature des bornes : fin « toujours valide » ou fin « inconnue »
+
+Une fin inconnue ne doit jamais faire passer pour valide aujourd'hui une entité disparue. Chaque période porte donc deux colonnes **obligatoires, sans valeur par défaut** : `debut_nature` et `fin_nature`.
+
+| `fin_nature` | Fin au plus tôt | Fin au plus tard | Affichage à la date du jour |
+|---|---|---|---|
+| `datee` | renseignée | renseignée | non valide après la fin |
+| `en_cours` | `NULL` | `NULL` | **valide** |
+| `inconnue` | **obligatoire** : au minimum la date de la dernière attestation | **obligatoire si une source atteste la disparition** : c'est la date de cette source. `NULL` seulement si aucune source ne dit rien après la dernière attestation | jamais valide : « **fin inconnue** » quand la fin au plus tard est renseignée ; « **existence non attestée après [date de la dernière attestation]** » quand elle est `NULL` |
+
+- `debut_nature` vaut `datee` ou `inconnue`. Si le début est inconnu, le début au plus tard (la première attestation) est obligatoire.
+- Des contraintes `CHECK` garantissent la cohérence entre la nature et les bornes renseignées. La règle « fin au plus tard obligatoire si une source atteste la disparition » ne peut pas être vérifiée par la base : c'est une règle d'import et de relecture, et la borne est citée comme toute assertion.
+- `en_cours` est une **affirmation**, citée comme les autres, jamais un défaut. Comme la colonne n'a pas de valeur par défaut, chaque import doit faire ce choix explicitement.
+- Une entité est valide à une date T **si et seulement si T appartient à son noyau**. Une fin `inconnue` arrête le noyau à la fin au plus tôt : au-delà, l'entité relève au plus de l'extension maximale.
 
 ### Contraintes temporelles
 

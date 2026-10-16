@@ -14,7 +14,18 @@ La cible finale est mondiale : les archives de tuiles, fond de carte compris, se
 Vérifications faites avec Context7 (octobre 2026) :
 
 - **PMTiles** est une archive en un seul fichier, lue par requêtes HTTP partielles depuis un stockage objet (S3, R2, GCS). MapLibre la lit grâce au protocole `pmtiles://` (`addProtocol`) ;
-- **Tippecanoe** (maintenu par Felt) écrit directement du PMTiles. `--coalesce-densest-as-needed` gère les petits zooms. `--no-simplification-of-shared-nodes` remplace l'option dépréciée `--detect-shared-borders` pour simplifier de façon identique les bords communs ;
+- **Tippecanoe** (maintenu par Felt) écrit directement du PMTiles. `--no-simplification-of-shared-nodes` remplace l'option dépréciée `--detect-shared-borders` pour simplifier de façon identique les bords communs. Plusieurs de ses options suppriment ou fusionnent des entités aux petits zooms, et certaines limites s'appliquent par défaut :
+
+  | Famille | Options |
+  |---|---|
+  | Suppression au besoin | `--drop-densest-as-needed` (`-as`), `--drop-fraction-as-needed` (`-ad`), `--drop-smallest-as-needed` (`-an`), `--drop-by-attribute-as-needed`, `--force-feature-limit` (`-pd`) |
+  | Fusion au besoin | `--coalesce-densest-as-needed` (`-aS`), `--coalesce-fraction-as-needed` (`-aD`), `--coalesce-smallest-as-needed` (`-aN`), `--coalesce` (`-ac`, fusion d'entités voisines aux attributs identiques) |
+  | Regroupement | `--cluster-densest-as-needed` (`-aC`), `--cluster-distance` (`-K`) |
+  | Suppression par zoom | `--drop-rate` (`-r`) et `--base-zoom` (`-B`), qui visent les points mais s'étendent aux polygones avec `--drop-polygons` (`-ap`) et aux lignes avec `--drop-lines` (`-al`) |
+  | Petits polygones | réduction des petits polygones, **active par défaut**, désactivée par `--no-tiny-polygon-reduction` (`-pt`) |
+  | Grille | `--grid-low-zooms` (`-aL`) |
+  | Limites par tuile | 200 000 entités et 500 Ko par défaut, levées par `-pf` et `-pk` |
+
 - **Martin** sert des tuiles dynamiques depuis des tables et des fonctions PostGIS, avec des paramètres de requête (`query_params`). `martin cp` sait générer des archives ;
 - **MapLibre GL JS** lit le nouveau format **MLT** en plus de MVT.
 
@@ -43,16 +54,20 @@ Vérifications faites avec Context7 (octobre 2026) :
    - avec l'ouverture à la contribution, des tuiles dynamiques **Martin** (fonctions PostGIS paramétrées par date, point de vue et date d'enregistrement), pour la prévisualisation et les combinaisons rares.
 2. **Publication immuable.** Une **publication** réunit l'archive et ses fichiers de valeurs (format : ADR 0009). Elle est publiée, versionnée et immuable, sous **un même identifiant de publication**. La publication fixe le point de vue et la date d'enregistrement R ; la date T est choisie dans le navigateur. Citer l'atlas, c'est citer (identifiant de publication, T), ce qui rend reproductible le triplet (T, point de vue, R) du §10.4 du modèle.
 3. **Format MVT**. MLT sera réévalué quand son outillage de production sera mûr.
-4. **Générateur : Tippecanoe**, à partir d'exports de PostGIS.
-5. **Tuiles = géométries + identifiant d'entité + bornes de validité**. Les valeurs statistiques sont chargées à part et jointes côté client par identifiant (`feature-state` de MapLibre, attributs de deck.gl).
-6. **Fond de carte sombre : Protomaps Basemaps**, auto-hébergé et recoloré par un style MapLibre propre à l'atlas.
+4. **Générateur : Tippecanoe**, à partir d'exports de PostGIS. Pour les archives d'entités, **aucune option qui supprime, fusionne ou regroupe des entités** n'est utilisée (liste dans le contexte), et la réduction des petits polygones est désactivée (`--no-tiny-polygon-reduction`, `-pt`). La réduction du niveau de détail des géométries reste permise.
+5. **Deux contrôles automatiques** dans la chaîne d'export, dont l'échec bloque la publication :
+   - **à l'export** : une seule géométrie par entité et par date pour le point de vue de la publication. Côté base, c'est une contrainte `WITHOUT OVERLAPS` sur le noyau dans les tables de la publication (ADR 0003) ;
+   - **après génération** : pour un échantillon de dates et de zooms, toutes les entités attendues sont présentes dans les tuiles. Le contrôle porte sur les zooms où le niveau concerné est affiché : à l'échelle mondiale, aux plus petits zooms, toutes les communes ne sont ni affichables ni affichées.
+6. **Tuiles = géométries + identifiant d'entité + bornes de validité**. Les valeurs statistiques sont chargées à part et jointes côté client par identifiant (`feature-state` de MapLibre, attributs de deck.gl).
+7. **Fond de carte sombre : Protomaps Basemaps**, auto-hébergé et recoloré par un style MapLibre propre à l'atlas.
 
 ## Conséquences
 
 - Le public reçoit des fichiers statiques sur CDN : aucun serveur de tuiles n'est nécessaire en tranche 1 (hébergement : ADR 0007).
 - Les versions d'une même entité partagent son identifiant, mais une seule est visible à une date T. L'identifiant d'entité peut donc être promu (`promoteId`) pour la jointure des valeurs.
 - La taille des tuiles croît avec le nombre de versions d'une période : c'est ce qui justifie le découpage en périodes.
-- **À vérifier** : que `--coalesce-densest-as-needed` de Tippecanoe ne fusionne pas des versions aux bornes de validité différentes ; sinon, l'option est écartée pour ces archives.
+- **À vérifier** : ce que fait Tippecanoe, sans option de suppression ni de fusion, quand une tuile dépasse ses limites. Il faut distinguer la **réduction du niveau de détail des géométries**, acceptable, de la **suppression d'entités**, interdite. Si des entités devaient être supprimées, la parade est de resserrer la période de l'archive ou de relever le zoom minimal du niveau, jamais d'accepter la perte.
+- **Le contrôle de présence après génération reste le garde-fou**, quel que soit ce comportement : une entité attendue absente des tuiles bloque la publication.
 - **Question ouverte** : les bornes à écrire dans les tuiles quand une date est floue (ADR 0003). La tranche 1 n'en a pas besoin : ses dates, issues du COG, sont exactes.
 - Changer de variable ou de millésime ne demande pas de regénérer les tuiles : seules les valeurs sont rechargées.
 - Une publication ne se modifie jamais : toute correction produit une nouvelle publication, sous un nouvel identifiant.

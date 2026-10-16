@@ -21,6 +21,8 @@ Vérifications faites avec Context7 (octobre 2026) :
 - la **version 6** est la majeure actuelle. Elle n'est plus livrée qu'en ES modules, et son guide de migration recommande d'épingler une majeure explicite (`^6.0.0`) ;
 - ses couches personnalisées (*custom layers*) fonctionnent en globe, grâce aux fonctions de projection injectées dans les shaders ;
 - MapLibre lit les tuiles MVT et le nouveau format MLT ;
+- l'exemple officiel `pmtiles-source-and-protocol` de MapLibre, sur la branche principale (donc en v6), utilise `addProtocol('pmtiles', protocol.tile)`. La documentation de pmtiles ne mentionne pas explicitement la v6 ;
+- en v6, un outil de build (Vite, webpack…) exige un appel unique à `setWorkerUrl()`, faute de quoi aucune tuile ne s'affiche ;
 - deck.gl 9.3 s'intègre à MapLibre (version 4.5.1 ou plus) en mode intercalé, en Mercator comme en globe.
 
 ## Options envisagées
@@ -41,6 +43,8 @@ On retient **MapLibre GL JS** comme bibliothèque de rendu cartographique, en **
 
 - La v6 n'existe qu'en ES modules : le worker de MapLibre doit être configuré avec le bundler du front (ADR 0008). La version exacte est fixée par le fichier de verrouillage des dépendances.
 - Le passage à une majeure suivante fera l'objet d'une décision explicite.
+- **À confirmer par le premier prototype** : la compatibilité du protocole `pmtiles` avec MapLibre 6, indiquée par l'exemple officiel de MapLibre mais pas affirmée par la documentation de pmtiles.
+- **À vérifier quand deck.gl arrivera** (ADR 0002) : sa compatibilité avec MapLibre 6.
 
 - Le fond de carte et les aplats thématiques s'écrivent dans le format de style MapLibre, ouvert et documenté.
 - Le globe est disponible nativement aux petits zooms, sans bibliothèque supplémentaire.

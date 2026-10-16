@@ -1,6 +1,6 @@
 # ADR 0008 — Framework et outillage du front
 
-- **Statut** : proposé
+- **Statut** : accepté
 - **Date** : 2026-10-16
 
 ## Contexte
@@ -30,13 +30,11 @@ Vérification faite avec Context7 (octobre 2026) : react-map-gl 8.1 (`react-map-
 
 ## Décision
 
-*En attente de validation.* Option recommandée : **A, React + Vite + TypeScript**, avec `react-map-gl/maplibre`.
+On retient **React + Vite + TypeScript**, avec `react-map-gl/maplibre`.
 
-Outillage recommandé : pnpm, Vite, TypeScript en mode strict, Vitest pour les tests unitaires, Playwright pour les tests de bout en bout. Le lint et le formatage restent à choisir (Biome, ou ESLint + Prettier).
+Outillage : pnpm, Vite, TypeScript en mode strict, Vitest pour les tests unitaires, Playwright pour les tests de bout en bout, **Biome** pour le lint et le formatage.
 
 ## Conséquences
-
-Si l'option recommandée est retenue :
 
 - le front est une application statique construite par Vite, servie depuis le stockage objet (ADR 0007) ;
 - le curseur temporel et la jointure des valeurs passent par l'API impérative de MapLibre, pas par l'état React ; cette règle fait partie de la relecture du code du front ;
