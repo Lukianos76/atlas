@@ -144,9 +144,10 @@ Elle n'est **jamais** recevable pour établir un fait contesté. **Un fait dispu
 Les **données de l'atlas** sont publiées sous **ODbL 1.0**.
 - Les **œuvres produites** (images de cartes, graphiques) sont réutilisables avec mention de l'atlas et de sa licence.
 - Les contributions sont soumises à des **conditions de contribution** qui autorisent un changement ultérieur vers une autre licence ouverte.
-- La licence du **code** relève d'un ADR à part.
+- Le **code** est sous AGPL 3.0 ou toute version ultérieure, la **documentation** (`docs/`) sous CC BY-SA 4.0 (ADR 0011).
 
-Un **avis juridique** est recommandé avant la première publication.
+Un **avis juridique** est recommandé avant la première publication. Questions à lui soumettre :
+- la protection par le droit d'auteur du code produit avec l'assistance d'une IA, et son effet sur l'application de l'AGPL à ce code (ADR 0011).
 
 ### 4.3 Licences acceptées
 

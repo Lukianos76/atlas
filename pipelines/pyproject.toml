@@ -2,6 +2,7 @@
 name = "atlas-pipelines"
 version = "0.0.0"
 description = "Pipelines d'import de données de l'atlas (ADR 0006)."
+license = "AGPL-3.0-or-later"
 requires-python = ">=3.14"
 dependencies = []
 
