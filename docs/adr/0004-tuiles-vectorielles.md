@@ -54,11 +54,16 @@ Vérifications faites avec Context7 (octobre 2026) :
    - avec l'ouverture à la contribution, des tuiles dynamiques **Martin** (fonctions PostGIS paramétrées par date, point de vue et date d'enregistrement), pour la prévisualisation et les combinaisons rares.
 2. **Publication immuable.** Une **publication** réunit l'archive et ses fichiers de valeurs (format : ADR 0009). Elle est publiée, versionnée et immuable, sous **un même identifiant de publication**. La publication fixe le point de vue et la date d'enregistrement R ; la date T est choisie dans le navigateur. Citer l'atlas, c'est citer (identifiant de publication, T), ce qui rend reproductible le triplet (T, point de vue, R) du §10.4 du modèle.
 3. **Format MVT**. MLT sera réévalué quand son outillage de production sera mûr.
-4. **Générateur : Tippecanoe**, à partir d'exports de PostGIS. Pour les archives d'entités, **aucune option qui supprime, fusionne ou regroupe des entités** n'est utilisée (liste dans le contexte), et la réduction des petits polygones est désactivée (`--no-tiny-polygon-reduction`, `-pt`). La réduction du niveau de détail des géométries reste permise.
-5. **Deux contrôles automatiques** dans la chaîne d'export, dont l'échec bloque la publication :
+4. **Générateur : Tippecanoe**, à partir d'exports de PostGIS. Pour les archives d'entités, **aucune option qui supprime, fusionne ou regroupe des entités** n'est utilisée (liste dans le contexte), et la réduction des petits polygones est désactivée (`--no-tiny-polygon-reduction`, `-pt`). La réduction du niveau de détail des géométries reste permise. Pour la couche de points (décision 6), l'option `-r1` est obligatoire : par défaut, Tippecanoe ne garde qu'une partie des points aux zooms inférieurs au zoom de base (taux de 2,5).
+5. **Trois contrôles automatiques** dans la chaîne d'export, dont l'échec bloque la publication :
    - **à l'export** : une seule géométrie par entité et par date pour le point de vue de la publication. Côté base, c'est une contrainte `WITHOUT OVERLAPS` sur le noyau dans les tables de la publication (ADR 0003) ;
-   - **après génération** : pour un échantillon de dates et de zooms, toutes les entités attendues sont présentes dans les tuiles. Le contrôle porte sur les zooms où le niveau concerné est affiché : à l'échelle mondiale, aux plus petits zooms, toutes les communes ne sont ni affichables ni affichées.
+   - **à l'export** également : chaque point de la couche de points (décision 6) est à l'intérieur de son polygone ;
+   - **après génération** : pour un échantillon de dates et de zooms, toutes les entités attendues sont présentes dans les tuiles, dans la couche de polygones comme dans la couche de points. Le contrôle porte sur les zooms où le niveau concerné est affiché : à l'échelle mondiale, aux plus petits zooms, toutes les communes ne sont ni affichables ni affichées.
 6. **Tuiles = géométries + identifiant d'entité + bornes de validité**. Les valeurs statistiques sont chargées à part et jointes côté client par identifiant (`feature-state` de MapLibre, attributs de deck.gl).
+   Les tuiles portent, en plus des polygones, une **couche de points** : un point par version de géométrie, avec le même identifiant d'entité et les mêmes bornes de validité. Elle sert aux symboles proportionnels (ADR 0002). Ce point est une **géométrie dérivée** (`docs/modele-donnees.md`, §6.1) :
+   - méthode : dérivation, centre du plus grand cercle inscrit dans le polygone (`ST_MaximumInscribedCircle`, PostGIS 3.1 ou plus avec GEOS 3.9 ou plus). Il est toujours intérieur au polygone, contrairement au centroïde d'une commune concave, et mieux centré que `ST_PointOnSurface` ;
+   - géométrie parente : le polygone ; période : celle du polygone ;
+   - citation : la source du polygone (§9.3 du modèle).
 7. **Fond de carte sombre : Protomaps Basemaps**, auto-hébergé et recoloré par un style MapLibre propre à l'atlas.
 
 ## Conséquences

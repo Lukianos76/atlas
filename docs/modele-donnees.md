@@ -19,7 +19,7 @@ Le modèle repose sur sept principes.
 | P2 | **On sépare l'identité de l'état.** | Une *entité* n'est qu'une identité durable, sans attribut variable. Tout ce qui change dans le temps est porté par des assertions qui ont une période de validité. |
 | P3 | **Pas de donnée sans source.** | Chaque assertion a **au moins une citation** précise. Cette contrainte est structurelle : elle ne dépend pas de l'interface. |
 | P4 | **Les désaccords sont conservés.** | Des assertions contradictoires coexistent. Pour chaque point de vue, une *préférence* justifiée peut désigner celle qu'on affiche (§10.2). |
-| P5 | **La neutralité passe par les points de vue.** | Le modèle n'impose aucune lecture des souverainetés. L'affichage applique un *point de vue* explicite (ONU, contrôle de fait, position d'un État…). |
+| P5 | **La neutralité passe par les points de vue.** | Le modèle n'impose aucune lecture des souverainetés. L'affichage applique un *point de vue* explicite (souveraineté de droit, contrôle de fait, position d'une entité politique…). |
 | P6 | **On garde l'original et on trace le dérivé.** | Une donnée reste rattachée au découpage sur lequel elle a été publiée. Tout recalcul sur un autre découpage est une donnée *dérivée*, dont la méthode et les entrées sont explicites. |
 | P7 | **Le modèle est bitemporel et ne perd rien.** | On distingue le temps historique (quand le fait était vrai) du temps d'enregistrement (quand l'atlas l'a affirmé). Rien n'est effacé : une assertion est retirée, jamais supprimée. |
 
@@ -617,7 +617,7 @@ Contraintes :
 
 **Préférences du point de vue par défaut de l'atlas.** Elles sont :
 - **visibles dans l'interface** : quand l'affichage par défaut retient une assertion parmi des concurrentes, il le signale et donne accès à la justification et aux autres assertions ;
-- **encadrées par la politique éditoriale** (`docs/politique-editoriale.md`, à rédiger), qui fixe les critères de choix et la procédure de décision. Une préférence par défaut qui ne s'appuie pas sur cette politique peut être contestée pour ce seul motif.
+- **encadrées par la politique éditoriale** (`docs/politique-editoriale.md`, §6.3 et §6.4), qui fixe les critères de choix et la procédure de décision. Une préférence par défaut qui ne s'appuie pas sur cette politique peut être contestée pour ce seul motif.
 
 ### 10.3 Point de vue
 
@@ -626,8 +626,8 @@ Un **point de vue** est un ensemble nommé de **règles de sélection** que l'af
 | Point de vue | Règle principale |
 |---|---|
 | **Contrôle de fait** | Pour l'appartenance politique, retenir `controle_de_fait_par` |
-| **Reconnaissance ONU** | Retenir la souveraineté que reconnaît l'Assemblée générale ou le Conseil de sécurité des Nations unies |
-| **Position de l'État X** | Retenir les assertions dont l'autorité est X (§5.6), et la souveraineté que revendique ou reconnaît l'État X |
+| **Souveraineté de droit** (droit international de l'époque) | Retenir la souveraineté que reconnaît l'Assemblée générale ou le Conseil de sécurité des Nations unies quand ils se sont prononcés ; sinon, celle qui résulte du dernier traité en vigueur entre les parties ; à défaut, « non tranché » (`docs/politique-editoriale.md`, §2.4) |
+| **Position de l'entité politique X** | Retenir les assertions dont l'autorité est X (§5.6), et la souveraineté que revendique ou reconnaît X |
 | **Par défaut de l'atlas** | Appliquer ses préférences, visibles et encadrées par la politique éditoriale. Pour un territoire disputé, afficher la mention « disputé » plutôt que d'imposer une couleur |
 
 Le point de vue est **toujours explicite** dans l'affichage. L'utilisateur sait quelle lecture il regarde, et peut en changer.
@@ -874,7 +874,7 @@ Le nom officiel *Deutsches Reich* (de, autorité D) reste le même sur toute la 
 
 > **1940–1945** est l'exemple type d'une **divergence entre contrôle et souveraineté**. Les deux lectures coexistent :
 > - en **point de vue « contrôle de fait »**, l'Alsace apparaît allemande en 1942 ;
-> - en **point de vue « droit international / souveraineté reconnue »**, elle reste française.
+> - en **point de vue « souveraineté de droit »**, elle reste française : aucun traité n'a remplacé le traité de Versailles.
 
 **Noms de Strasbourg (S)** :
 
@@ -917,7 +917,7 @@ Le **recensement allemand du 1er décembre 1900** donne la population par *Gemei
 
 > « À quel pays appartenait Strasbourg le 15 juin 1942 ? »
 > - **Point de vue contrôle de fait** → État allemand, sous régime national-socialiste (certitude : établi). Nom affiché : *Straßburg*, officiel selon l'autorité allemande.
-> - **Point de vue souveraineté reconnue** → France. Annexion non reconnue, citée. Nom affiché : *Strasbourg*.
+> - **Point de vue souveraineté de droit** → France. Annexion non reconnue, citée. Nom affiché : *Strasbourg*.
 > - **Par défaut de l'atlas** → les deux sont affichés, avec la mention « annexion de fait, non reconnue en droit international ».
 
 ---
@@ -990,7 +990,7 @@ Seul un petit nombre d'États **reconnaît** ce rattachement. Ce sont autant d'a
 flowchart TB
     Q["Requête : à quel pays appartient<br/>la péninsule de Crimée (C0)<br/>le 1er janvier 2025 ?"]
     Q --> PV1["Point de vue<br/>CONTRÔLE DE FAIT"]
-    Q --> PV2["Point de vue<br/>RECONNAISSANCE ONU"]
+    Q --> PV2["Point de vue<br/>SOUVERAINETÉ DE DROIT"]
     Q --> PV3["Point de vue<br/>PAR DÉFAUT DE L'ATLAS"]
     PV1 --> R1["Russie<br/>entités affichées : C3, C4"]
     PV2 --> R2["Ukraine<br/>entités affichées : C1, C2<br/>(A/RES/68/262)"]
@@ -1011,7 +1011,7 @@ Le choix du point de vue par défaut et de son rendu (hachures, libellé) est un
 |---|---|---|
 | **Des polygones indépendants, sans topologie imposée** | Il peut y avoir des chevauchements et des lacunes entre voisins | Détection automatique d'anomalies (§6.4), puis résolution ou explication |
 | **Le coût du versionnement complet** | Chaque modification de limite crée une nouvelle géométrie entière. Le volume grandit vite au niveau communal sur deux siècles | Géométries dérivées par union. La question du stockage relève du niveau technique, hors de ce document |
-| **Une certitude qualitative** | Quatre niveaux, une échelle subjective | Des critères écrits pour chaque niveau, avec des exemples (à rédiger) |
+| **Une certitude qualitative** | Quatre niveaux, une échelle subjective | Des critères écrits pour chaque niveau, avec des exemples (`docs/politique-editoriale.md`, §6.2) |
 | **Les tables de passage approximatives** | Une pondération surfacique suppose une densité homogène, ce qui est souvent faux | Toujours tracée (§8.4) et toujours signalée dans l'interface |
 | **Des variables historiques hétérogènes** | « Population présente » de 1900 et « population municipale » de 2020 ne mesurent pas la même chose | Une correspondance explicite entre variables, jamais une fusion silencieuse |
 | **Des sources inaccessibles** | Une archive non numérisée ne se vérifie pas en ligne | La citation reste obligatoire. L'accessibilité devient un attribut, et une copie peut être déposée si la licence le permet |
@@ -1024,6 +1024,8 @@ Les questions sont classées selon leur effet sur les premières tranches de don
   - les observations originales restent rattachées aux communes de chaque époque (§8.3), mais **sans géométrie historique** : aucune source officielle et ouverte ne donne les contours communaux du Bas-Rhin à chaque recensement depuis 1968 (`docs/recherches/sources-geometries-historiques.md`) ;
   - la première carte utilise la **géographie courante** : les contours d'ADMIN EXPRESS (IGN, édition récente) et les séries de l'INSEE en géographie courante, importées comme **dérivations externes** et contrôlées par le recalcul via le graphe de filiation (§8.4, Q13) ;
   - l'interface indique clairement que les valeurs passées portent sur le **territoire des communes actuelles** ;
+  - la **population** s'affiche par défaut en **cercles proportionnels**, placés sur un point dérivé de chaque commune : le centre du plus grand cercle inscrit dans son contour (géométrie dérivée, §6.1) ;
+  - en second, une **choroplèthe du taux d'évolution annuel moyen** entre deux dates de la série INSEE espacées d'au moins cinq ans. Ce taux est une **observation dérivée interne** (§8.4), dont les entrées sont les deux populations ; il est signalé comme dérivé. Palette divergente centrée sur 0, seuils fixés dans la fiche de la variable lors de l'import (`docs/politique-editoriale.md`, §5.4) ;
 - **tranche 2** : la période 1871–1918.
 
 Les numéros des questions sont conservés d'une version à l'autre.
@@ -1031,7 +1033,10 @@ Les numéros des questions sont conservés d'une version à l'autre.
 #### Tranchées
 
 - **Q1. Le critère de rupture d'identité.** Tranchée par la règle du §4.4 : rupture si et seulement si création ou suppression, rétablissement relié par `est_continuation_de`. La correspondance avec les mouvements du COG figure au §7.4.
+- **Q2. La gouvernance des points de vue.** Tranchée pour l'essentiel par la politique éditoriale (§2.4) : liste fermée (par défaut de l'atlas, contrôle de fait, souveraineté de droit), et point de vue d'une entité de catégorie politique ajouté sur demande, si ses positions sont sourcées sur ses actes officiels.
+- **Q3. Le point de vue par défaut pour les territoires disputés.** Tranchée par la politique éditoriale (§2.2 et §2.3) : rendu « disputé » (hachures portant les deux lectures, mention explicite), sans retenir de lecture. Est disputé un territoire dont le contrôle de fait et la souveraineté revendiquée divergent, ou que deux entités de catégorie politique revendiquent, chaque position étant appuyée par une source primaire.
 - **Q4. La granularité de la modération.** Tranchée par la règle d'acceptation des lots (§10.5) : contrôles automatiques obligatoires, échantillon stratifié vérifié par un acteur autre que celui de l'import, rejet au moindre écart imputable à l'import, erratum traité comme assertion concurrente, lot corrigé soumis comme nouveau lot. Seuil du contrôle de variation pour la tranche 1 : 30 % et 50 habitants à la fois, à réévaluer après le premier import.
+- **Q9. Les licences incompatibles.** Tranchée par la politique éditoriale (§4.5) : une dérivée porte la licence la plus contraignante de ses entrées ; une dérivée d'entrées aux licences incompatibles n'est pas publiée.
 - **Q13. Les dérivations externes.** Tranchée. Les séries de l'INSEE en géographie courante sont des **dérivations externes** (§8.4). Pour la tranche 1, elles sont importées comme telles, puis recalculées par le graphe de filiation et comparées. Tolérance nulle quand tous les transferts composés sont totaux. En présence de transferts partiels, dont le COG ne publie pas les parts, l'écart est signalé et documenté, sans tolérance fixe. Valeur affichée par défaut : celle de l'INSEE, le recalcul interne restant visible comme contrôle.
 
 #### Bloquent la tranche 1
@@ -1040,13 +1045,10 @@ Aucune question ouverte ne bloque plus la tranche 1.
 
 #### Tranches ultérieures
 
-- **Q2. La gouvernance des points de vue.** Qui crée un point de vue ? Une liste fermée (ONU, contrôle de fait, chaque État membre) ou une création libre ? Comment empêcher un point de vue militant de passer pour neutre ? *La tranche 1 n'utilise que le point de vue par défaut.*
-- **Q3. Le point de vue par défaut pour les territoires disputés.** Quelle lecture s'affiche sans choix de l'utilisateur ? Le rendu « disputé » (hachures) suffit-il, ou faut-il une règle générale ? *À trancher pour la première tranche qui comporte un territoire disputé (1940–1945, Crimée).*
 - **Q6. Les calendriers.** Quel calendrier sert d'échelle de normalisation (grégorien proleptique ou julien) ? Comment traiter les dates converties dont la règle de conversion est elle-même débattue (calendriers mésoaméricains, chinois…) ? *À trancher pour la première tranche antérieure à 1582.*
 - **Q7. Le nom par défaut.** Dans quelle langue afficher par défaut une entité aux noms concurrents (Крим / Крым / Qırım ; Strasbourg / Straßburg) ? La langue de l'utilisateur, le nom officiel selon l'autorité souveraine à la date affichée, ou autre chose ? *À trancher pour la tranche 2. Dans la tranche 1, chaque commune n'a qu'un nom officiel à une date donnée, selon une seule autorité.*
-- **Q9. Les licences incompatibles.** Une observation dérivée de deux sources aux licences incompatibles peut-elle être publiée ? Faut-il propager les licences à travers les dérivations ? *À trancher pour la première tranche qui combine des sources sous licences différentes.*
 - **Q10. Les entités non géographiques.** Partis, candidats, scrutins, dynasties : réutilisent-ils exactement le modèle Entité/Assertion, ou faut-il une famille séparée ? *À trancher pour la première tranche électorale.*
-- **Q11. Les dérivations en cascade.** Une dérivée devient l'entrée d'une autre dérivée. Faut-il limiter la profondeur, et comment propager l'incertitude ? *Ne bloque pas la tranche 1 si toute dérivée y est calculée directement à partir des observations originales, en composant les transferts le long du graphe de filiation (§7.2).*
+- **Q11. Les dérivations en cascade.** Une dérivée devient l'entrée d'une autre dérivée. Faut-il limiter la profondeur, et comment propager l'incertitude ? *Ne bloque pas la tranche 1 si toute dérivée y est calculée directement à partir des observations originales, en composant les transferts le long du graphe de filiation (§7.2).* *La propagation de la certitude est tranchée par la politique éditoriale (§6.2) : la certitude d'une dérivée ne dépasse pas celle de la moins certaine de ses entrées. La profondeur des cascades reste ouverte.*
 - **Q14. La souveraineté portée par les circonscriptions.** Dans le cas de la Crimée (§13), la revendication ukrainienne porte sur C1 et la revendication russe sur C3. Ces assertions n'ont pas le même sujet : elles ne sont pas concurrentes au sens du §5.1, et le modèle ne voit pas le différend. *Piste retenue* : une entité de catégorie « territoire », créée seulement quand deux systèmes concurrents décrivent le même sol, et qui porterait la souveraineté revendiquée et le contrôle de fait. *À trancher pour la première tranche qui comporte un territoire disputé.*
 - **Q15. La correspondance entre niveaux de systèmes différents.** Lire la filiation « à un niveau donné » (§7.2) suppose de savoir que le département français et le Bezirk allemand se situent au même niveau d'analyse. Cette correspondance entre niveaux de systèmes différents doit être **déclarée**, comme la correspondance entre variables (§12.4) : explicite, sourcée et assortie de ses réserves, jamais supposée. *À trancher pour la tranche 2.*
 

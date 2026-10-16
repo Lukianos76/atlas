@@ -12,6 +12,8 @@
 
 L'interface indique clairement que les valeurs passées portent sur le **territoire des communes actuelles**.
 
+La population s'y affiche en **cercles proportionnels**, placés sur un point dérivé du contour de chaque commune ; le taux d'évolution annuel moyen s'affiche en choroplèthe (`docs/modele-donnees.md`, §14.2 ; ADR 0002 et 0004).
+
 **Justification.** Le modèle sépare l'histoire des géométries de celle des données. Les observations originales restent rattachées aux communes de chaque époque, avec ou sans géométrie. La tranche 1 teste la seconde, l'histoire des données (entités, mouvements du COG, filiation, dérivations), sur des sources officielles et ouvertes. Aucune source de ce type ne fournit les contours historiques (§3 ci-dessous). Les géométries historiques sont donc reportées, sans bloquer le test du modèle.
 
 Pistes reportées : voir `docs/backlog.md`.

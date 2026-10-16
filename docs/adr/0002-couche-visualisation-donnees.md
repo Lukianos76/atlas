@@ -37,15 +37,18 @@ Vérifications faites avec Context7 (octobre 2026) :
 On retient l'**option hybride** :
 
 - les **aplats par entité** (choroplèthes, contours) sont des couches natives MapLibre ;
+- les **symboles proportionnels par entité** (cercles) sont des couches natives MapLibre (`circle`), dont le rayon est joint par `feature-state` ;
 - les **flux, densités et effets additifs** sont des couches deck.gl, intégrées par `MapLibreOverlay` en mode intercalé, placées sous les libellés avec `beforeId`, avec un blending additif réglé couche par couche.
 
-**deck.gl n'est pas utilisé dans la tranche 1**, qui n'affiche que des aplats (population communale). Il arrive avec la première vue de flux ou de densité.
+**deck.gl n'est pas utilisé dans la tranche 1**, qui affiche la population en **cercles proportionnels** et le taux d'évolution en **aplats** (`docs/modele-donnees.md`, §14.2). Il arrive avec la première vue de flux ou de densité.
 
 ## Conséquences
 
 - La tranche 1 ne dépend que de MapLibre : ni le poids de deck.gl, ni la question de sa compatibilité avec le globe ne la concernent.
 
 - Le cas le plus fréquent, à commencer par la tranche 1 (population communale), reste dans le format de style MapLibre, accessible aux contributeurs.
+- **Cercles proportionnels** : la surface du cercle est proportionnelle à la valeur (rayon proportionnel à sa racine carrée). L'échelle des rayons est **commune à toutes les dates** d'une publication, comme les seuils de classes (`docs/politique-editoriale.md`, §5.4).
+- L'ordre d'affichage des cercles (`circle-sort-key`, propriété de mise en page) n'accepte pas `feature-state` : on ne peut pas dessiner les grands cercles sous les petits à partir des valeurs jointes. Les cercles sont donc **semi-transparents et cerclés d'un contour**, pour que les petits restent visibles sous les grands. **À vérifier par un prototype.**
 - L'identité visuelle (additif, flux animés) est tenue sans réécrire de primitives géographiques.
 - L'équipe doit connaître deux modèles de rendu ; la frontière entre les deux (aplats d'un côté, flux et densités de l'autre) est à documenter.
 - Le poids du bundle augmente : deck.gl est à charger de façon différée quand une vue n'en a pas besoin.
