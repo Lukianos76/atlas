@@ -57,7 +57,7 @@ Les pipelines sont écrits en **Python**, qui **orchestre**. Le **calcul est dé
 - opérations géométriques et contrôles d'ensemble en SQL dans PostGIS (GEOS) ;
 - écriture en base par `COPY` binaire.
 
-Les tests utilisent pytest. L'environnement est géré par uv.
+Les tests utilisent pytest. L'environnement est géré par uv. Le lint et le formatage passent par Ruff, et les types sont vérifiés par pyright en mode strict : une confusion entre un identifiant d'entité et un code de référentiel doit être attrapée avant l'exécution.
 
 **Règle** : pas de boucle Python ligne à ligne sur un gros volume. Tout traitement massif passe par un moteur natif. Un point chaud qui resterait trop lent est réécrit en Rust et exposé à Python (PyO3).
 
