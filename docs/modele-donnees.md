@@ -1,6 +1,6 @@
 # Modèle de données conceptuel de l'atlas
 
-> **Statut** : version 3 (octobre 2026), figée pour la tranche 1.
+> **Statut** : version 3.1 (octobre 2026), figée pour la tranche 1. La version 3.1, validée le 2026-10-17, ajoute au §10.5 le contrôle « Version déjà importée » et le localisateur au niveau de la cellule (`docs/schema.md`, §8.4).
 > **Portée** : modèle **conceptuel** uniquement. Ce document ne retient aucune technologie de stockage, aucun format d'échange ni aucune bibliothèque. Les termes « entité », « attribut » et « relation » s'entendent au sens conceptuel.
 
 ---
@@ -669,7 +669,7 @@ Un **lot d'import** regroupe les révisions issues d'un même import de données
 | `statut` | proposé, validé, partiellement validé, rejeté |
 
 Règles :
-- chaque assertion du lot garde **sa propre** citation, dont le localisateur désigne la ligne ou l'enregistrement dans le jeu de données. Le lot ne remplace pas la citation : P3 n'est pas affaibli ;
+- chaque assertion du lot garde **sa propre** citation, dont le localisateur désigne la **cellule** du jeu de données, ligne et colonne, sous la forme `row=<n>;column=<nom>` (`docs/schema.md`, §5.8). Le lot ne remplace pas la citation : P3 n'est pas affaibli ;
 - valider le lot valide les révisions du lot encore au statut « proposée » ;
 - une contestation ultérieure vise une assertion, pas le lot.
 
@@ -689,6 +689,7 @@ Règles :
 | Total | La somme des communes est égale au total départemental publié, sans écart |
 | Variation | Les communes dont la variation par rapport au recensement précédent dépasse un seuil sont signalées dans le rapport et examinées par le vérificateur. Une variation qu'aucun mouvement du COG ni la source n'explique est traitée comme un écart de l'échantillon. Seuil : une commune est signalée si sa variation dépasse **à la fois 30 % et 50 habitants**. Ces valeurs seront réévaluées après le premier import |
 | Recalcul | Pour un lot de séries de l'INSEE en géographie courante : comparaison avec le recalcul par le graphe de filiation, selon les tolérances du §8.4 |
+| Version déjà importée | Le lot est refusé si un lot validé ou partiellement validé couvre déjà la même version de la source (même œuvre, même millésime) sur un périmètre qui recoupe le sien. Un lot rejeté ne bloque pas ; un erratum est une autre version |
 | Échantillon | 15 communes : les 5 plus peuplées ; 5 communes touchées par un mouvement du COG sur la période couverte ; 5 tirées au hasard |
 
 ---

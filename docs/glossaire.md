@@ -1,6 +1,6 @@
 # Glossaire du code
 
-> **Statut** : version 1 (octobre 2026), validée.
+> **Statut** : version 2 (octobre 2026), validée le 2026-10-17. La version 2 ajoute les termes du schéma logique (`docs/schema.md`, §10).
 > **Portée** : traduction anglaise des termes de `docs/modele-donnees.md`, de `docs/politique-editoriale.md` et des ADR, pour les identifiants du code, du schéma et des fichiers publiés (CLAUDE.md, règle 5). Les commentaires et la documentation restent en français.
 > **Règle** : un terme absent de ce glossaire n'est pas traduit à la volée. Sa traduction est proposée pour ajout.
 
@@ -15,6 +15,7 @@
   - le **vocabulaire des référentiels externes** : `COM`, `COMA`, `COMD`, `ARM`, les codes de type de modification du COG, `INSEE`, `NUTS`, `LAU` ;
   - les noms propres.
 - **Collisions évitées** : plusieurs termes français ont deux sens dans le modèle, ou un sens qui entre en conflit avec PostgreSQL. Ils sont signalés par ⚠.
+- **Schéma** : les tables de type d'assertion portent le suffixe `_assertion` (`name_assertion`, `geometry_assertion`), pour éviter des tables nommées comme un type PostGIS ou un mot courant. Les tables de liaison composent des termes du glossaire : `assertion_citation`, `observation_citation`, `derivation_input`, `crosswalk_transfer`.
 
 ---
 
@@ -23,14 +24,19 @@
 | Français | Anglais | Note |
 |---|---|---|
 | entité | `entity` | |
+| existence (d'une entité) | `existence` | Déduite des participations (`docs/schema.md`, vue `entity_existence`) |
 | catégorie d'entité | `entity_category` | |
+| catégories de premier niveau : politique, administrative, statistique, culturelle, naturelle, lieu, organisation | `political`, `administrative`, `statistical`, `cultural`, `natural`, `place`, `organization` | Codes de la taxonomie (modèle §4.2) ; les catégories fines sont des valeurs de données |
 | identifiant interne | `id` | |
 | assertion | `assertion` | |
 | assertions concurrentes | `competing_assertions` | |
 | date historique | `historical_date` | |
 | expression originale | `original_expression` | |
 | calendrier d'origine | `source_calendar` | |
+| grégorien, julien, républicain | `gregorian`, `julian`, `french_republican` | Valeurs de `source_calendar` ; liste ouverte |
+| règle de conversion (d'une date) | `conversion_rule` | |
 | précision (granularité d'une date) | `granularity` | ⚠ distinct de la marge (§3) |
+| jour, mois, année, décennie, siècle, millénaire | `day`, `month`, `year`, `decade`, `century`, `millennium` | Valeurs de `granularity` |
 | au plus tôt / au plus tard | `earliest` / `latest` | |
 | qualificatif (exact, environ, avant, après, présumé) | `qualifier` (`exact`, `approximate`, `before`, `after`, `presumed`) | |
 | période | `period` | |
@@ -47,6 +53,7 @@
 
 | Français | Anglais | Note |
 |---|---|---|
+| type d'assertion | `assertion_type` | Colonne discriminante du tronc commun |
 | sujet | `subject` | |
 | contenu | `content` | |
 | autorité | `authority` | |
@@ -65,6 +72,7 @@
 | statut (nature juridique) | `legal_status` | ⚠ distinct du statut de révision (§8) |
 | relation | `relation` | |
 | type de relation | `relation_type` | |
+| sous-type de relation | `relation_subtype` | |
 
 **Types de relation**
 
@@ -83,7 +91,9 @@
 | Français | Anglais | Note |
 |---|---|---|
 | système de découpage | `division_system` | |
+| validité d'un système de découpage | `system_validity` | Assertion dont le sujet est le système |
 | niveau | `level` | |
+| rang (d'un niveau) | `rank` | |
 | appartenance à un système | `system_membership` | |
 | entité parente | `parent` | |
 | géométrie | `geometry` | |
@@ -91,6 +101,7 @@
 | zone floue | `fuzzy_zone` | |
 | cœur / extension maximale (d'une zone floue) | `core` / `max_extent` | |
 | précision spatiale | `spatial_accuracy` | En mètres |
+| système de coordonnées d'origine | `source_crs` | Celui de la source ; le stockage est en WGS 84 |
 | résolution | `resolution` | |
 | méthode : levé officiel, numérisation, reconstitution, dérivation, estimation | `method` : `official_survey`, `digitization`, `reconstruction`, `derivation`, `estimate` | |
 | géométrie parente | `parent_geometry` | |
@@ -105,6 +116,9 @@
 |---|---|---|
 | événement | `event` | |
 | événement territorial | `territorial_event` | |
+| type d'événement | `event_type` | Assertion, pour admettre des types concurrents (Q8) |
+| date d'un événement | `event_date` | Assertion |
+| type de date : d'effet, de l'acte, de signature, d'entrée en vigueur | `event_date_kind` : `effective`, `act`, `signature`, `entry_into_force` | Q12 du modèle |
 | participation | `participation` | |
 | rôle : `cree`, `supprime`, `concerne`, `acteur` | `role` : `created`, `dissolved`, `affected`, `actor` | ⚠ `dissolved` plutôt que `deleted`, pour ne pas évoquer une suppression en base |
 | récit | `narrative` | |
@@ -116,8 +130,9 @@
 | mouvement du COG | `cog_movement` | Ligne ou groupe de lignes de la table des mouvements ; ce n'est pas un `event` (modèle, §7.4) |
 | transfert | `transfer` | |
 | source / destination d'un transfert | `from_entity` / `to_entity` | ⚠ évite `source`, réservé aux sources citées |
-| territoire transféré | `territory` | |
+| territoire transféré : totalité, partiel | `territory` : `whole`, `partial` | |
 | part | `share` | |
+| base de la part : surface, population | `share_basis` : `area`, `population` | |
 | filiation | `lineage` | |
 | graphe de filiation | `lineage_graph` | |
 | table de passage | `crosswalk` | Terme usuel en statistique |
@@ -127,20 +142,26 @@
 | Français | Anglais | Note |
 |---|---|---|
 | variable | `variable` | |
+| libellé, définition, unité | `label`, `definition`, `unit` | |
+| type de valeur : quantité, taux, catégorie, texte | `value_type` : `quantity`, `rate`, `category`, `text` | |
+| seuils de discrétisation | `class_breaks` | Politique §5.4 |
 | règle d'agrégation : additive, non additive | `aggregation_rule` : `additive`, `non_additive` | |
 | dimension | `dimension` | |
 | membre de dimension | `dimension_member` | |
 | observation | `observation` | |
 | rôle d'entité : sujet, origine, destination, zone de référence | `entity_role` : `subject`, `origin`, `destination`, `reference_area` | |
+| entités d'une observation | `observation_entity` | Rôles autres que le sujet |
 | période de référence | `reference_period` | |
 | valeur, marge | `value`, `margin` | |
 | nature : originale, dérivée | `nature` : `original`, `derived` | |
 | date de géographie | `geography_date` | |
 | géographie courante | `current_geography` | ⚠ seul emploi de `current` ; un état matérialisé à jour est `up_to_date` (§9) |
-| dérivation interne, externe | `derivation` : `internal`, `external` | |
+| dérivation interne, externe | `derivation` : `internal`, `external` | Colonne `derivation_kind` |
+| résumé de la méthode, description des entrées | `method_summary`, `inputs_description` | Dérivation externe |
 | auteur | `author` | |
 | entrées | `inputs` | |
 | somme simple, pondération surfacique, pondération par la population, interpolation | `simple_sum`, `area_weighting`, `population_weighting`, `interpolation` | |
+| taux d'évolution annuel moyen | `mean_annual_growth_rate` | Méthode de dérivation interne |
 | avertissement | `caveat` | |
 | correspondance entre variables | `variable_mapping` | |
 
@@ -154,14 +175,16 @@
 | date de publication | `publication_date` | |
 | version, édition, millésime | `version`, `edition`, `vintage` | `vintage` pour le millésime d'un jeu de données |
 | identifiants pérennes | `persistent_ids` | |
+| œuvre parente | `parent_work` | Œuvre qui en contient une autre |
 | licence | `license` | |
+| copie archivée de la licence | `license_archived_copy` | Politique §4.3 |
 | fiabilité éditoriale | `editorial_reliability` | |
 | citation | `citation` | |
 | localisateur | `locator` | |
 | URL consultée, date de consultation | `accessed_url`, `accessed_on` | |
 | copie archivée | `archived_copy` | |
 | extrait | `excerpt` | |
-| rôle de la citation | `citation_role` | |
+| rôle de la citation : valeur, date, géométrie, part | `citation_role` : `value`, `date`, `geometry`, `share` | Porté par le lien, pas par la citation |
 
 ## 8. Contribution et modération
 
@@ -169,7 +192,10 @@
 |---|---|---|
 | révision | `revision` | |
 | contributeur | `contributor` | |
+| nature du contributeur : humain, agent | `contributor_kind` : `human`, `agent` | |
 | horodatage | `recorded_at` | |
+| instantané (d'une révision) | `snapshot` | État résultant |
+| remplacée le | `superseded_at` | Fin de la période de transaction, déduite de la révision suivante |
 | opération : création, correction, changement de statut | `operation` : `create`, `correct`, `review_status_change` | ⚠ distinct de `legal_status_change` (§5) |
 | statut de révision | `review_status` | ⚠ distinct de `legal_status` |
 | proposée, validée, contestée, retirée | `proposed`, `validated`, `contested`, `withdrawn` | ⚠ `contested` (révision) ≠ `disputed` (territoire) |
@@ -177,6 +203,9 @@
 | contenu précédent | `previous_content` | |
 | lot d'import | `import_batch` | |
 | responsable du lot | `owner` | |
+| rôle de connexion d'un contributeur | `db_role` | Rôle PostgreSQL ; l'identité d'un contributeur est celle de sa connexion |
+| rôles de groupe : propriétaire, import, vérification | `atlas_owner`, `atlas_import`, `atlas_review` | Rôles PostgreSQL (`docs/schema.md`, §5.13) |
+| vérificateur du lot | `reviewer` | Contributeur humain, différent du responsable |
 | procédure | `procedure` | |
 | périmètre | `scope` | |
 | rapport de validation | `validation_report` | |
@@ -231,4 +260,6 @@
 | G8 | Table de passage | `crosswalk` | `correspondence_table` |
 | G9 | Millésime | `vintage` | `release_year` |
 
-Corrections de la validation : `status_change` scindé en `legal_status_change` et `review_status_change` ; `current` remplacé par `up_to_date` pour l'état matérialisé ; points de vue alignés sur la politique éditoriale (§2.4) ; ajout de `current_geography` et `cog_movement`.
+Version 2 : ajout des termes du schéma logique (`docs/schema.md`, §10).
+
+Corrections de la validation de la version 1 : `status_change` scindé en `legal_status_change` et `review_status_change` ; `current` remplacé par `up_to_date` pour l'état matérialisé ; points de vue alignés sur la politique éditoriale (§2.4) ; ajout de `current_geography` et `cog_movement`.

@@ -1,6 +1,6 @@
 # ADR 0003 — Base de données et extension spatiale
 
-- **Statut** : accepté
+- **Statut** : accepté, révisé le 2026-10-17 (citations des observations hors lot, `docs/schema.md` §8.1)
 - **Date** : 2026-10-16
 
 ## Contexte
@@ -83,10 +83,11 @@ Une fin inconnue ne doit jamais faire passer pour valide aujourd'hui une entité
 Pour les imports en masse, la citation n'est pas recopiée ligne par ligne :
 
 - le **lot d'import** porte la citation de l'œuvre importée, avec sa version ou son millésime (§10.5) ;
-- chaque observation porte `lot_id NOT NULL` et `localisateur NOT NULL` (ligne ou enregistrement dans le jeu de données) ;
+- une observation importée par lot porte `import_batch_id` et `locator` (cellule du jeu de données, ligne et colonne : `row=<n>;column=<nom>`, `docs/schema.md` §5.8), tous deux renseignés ; un `CHECK` impose qu'ils soient renseignés ensemble ou absents ensemble ;
+- une observation hors lot (saisie individuelle ou dérivée interne) n'en porte aucun : un trigger de contrainte différé, déclenché seulement quand `import_batch_id` est `NULL`, exige au moins une citation liée ou, pour une dérivée interne, au moins une entrée. Les imports en masse ne paient pas ce contrôle ;
 - la révision du lot vaut pour toutes ses observations. Une révision individuelle n'est créée qu'en cas de contestation ou de correction d'une observation.
 
-La règle « pas de donnée sans source » (P3) reste garantie par ces colonnes obligatoires. Le modèle conceptuel ne change pas : la citation d'une observation reste le couple (œuvre du lot, localisateur). Seule sa représentation physique est mutualisée.
+La règle « pas de donnée sans source » (P3) reste garantie par ces colonnes et ce trigger. Le modèle conceptuel ne change pas : la citation d'une observation importée reste le couple (œuvre du lot, localisateur), et une dérivée interne est citée par transitivité, à travers ses entrées (modèle §8.4), puisque l'atlas n'est jamais une source (§9.3). Seule la représentation physique des citations d'un lot est mutualisée.
 
 ## Conséquences
 

@@ -1,6 +1,6 @@
 # ADR 0009 — Format des fichiers de valeurs
 
-- **Statut** : accepté
+- **Statut** : accepté, révisé le 2026-10-17 (procédés de représentation dans le manifeste, `docs/schema.md` §8.2)
 - **Date** : 2026-10-16
 
 ## Contexte
@@ -31,7 +31,7 @@ On retient **Parquet, avec un manifeste JSON par publication**.
 
 Organisation d'une publication :
 
-- **`publication.json`** (manifeste) : identifiant de publication, point de vue, date d'enregistrement R, période couverte, liste des fichiers (archive PMTiles comprise) avec leur empreinte SHA-256, licences ;
+- **`publication.json`** (manifeste) : identifiant de publication, point de vue, date d'enregistrement R, période couverte, liste des fichiers (archive PMTiles comprise) avec leur empreinte SHA-256, licences, et **procédés de représentation** appliqués à l'export : méthode et paramètres du point de la couche de points (ADR 0004, décision 6), règle de choix de la valeur affichée par défaut quand aucune préférence n'est stockée (en tranche 1, la valeur INSEE, Q13 du modèle) ;
 - **un fichier Parquet de valeurs par variable**, trié par identifiant d'entité puis par date. Colonnes : identifiant d'entité, période de référence, membres des dimensions, valeur, marge, nature (originale ou dérivée), référence de citation ;
 - **un fichier Parquet des citations** : œuvre et localisateur, désignés par la référence de citation.
 

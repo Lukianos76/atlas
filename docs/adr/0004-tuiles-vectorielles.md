@@ -1,6 +1,6 @@
 # ADR 0004 — Format et génération des tuiles vectorielles
 
-- **Statut** : accepté
+- **Statut** : accepté, révisé le 2026-10-17 (point de la couche de points, `docs/schema.md` §8.2)
 - **Date** : 2026-10-16
 
 ## Contexte
@@ -60,10 +60,10 @@ Vérifications faites avec Context7 (octobre 2026) :
    - **à l'export** également : chaque point de la couche de points (décision 6) est à l'intérieur de son polygone ;
    - **après génération** : pour un échantillon de dates et de zooms, toutes les entités attendues sont présentes dans les tuiles, dans la couche de polygones comme dans la couche de points. Le contrôle porte sur les zooms où le niveau concerné est affiché : à l'échelle mondiale, aux plus petits zooms, toutes les communes ne sont ni affichables ni affichées.
 6. **Tuiles = géométries + identifiant d'entité + bornes de validité**. Les valeurs statistiques sont chargées à part et jointes côté client par identifiant (`feature-state` de MapLibre, attributs de deck.gl).
-   Les tuiles portent, en plus des polygones, une **couche de points** : un point par version de géométrie, avec le même identifiant d'entité et les mêmes bornes de validité. Elle sert aux symboles proportionnels (ADR 0002). Ce point est une **géométrie dérivée** (`docs/modele-donnees.md`, §6.1) :
-   - méthode : dérivation, centre du plus grand cercle inscrit dans le polygone (`ST_MaximumInscribedCircle`, PostGIS 3.1 ou plus avec GEOS 3.9 ou plus). Il est toujours intérieur au polygone, contrairement au centroïde d'une commune concave, et mieux centré que `ST_PointOnSurface` ;
-   - géométrie parente : le polygone ; période : celle du polygone ;
-   - citation : la source du polygone (§9.3 du modèle).
+   Les tuiles portent, en plus des polygones, une **couche de points** : un point par version de géométrie, avec le même identifiant d'entité et les mêmes bornes de validité. Elle sert aux symboles proportionnels (ADR 0002). Ce point n'est pas une assertion : c'est un **procédé de représentation**, et non une affirmation géographique. Il n'est pas stocké en base :
+   - il est calculé à l'export, de façon déterministe, à partir du polygone de la même version : centre du plus grand cercle inscrit (`ST_MaximumInscribedCircle`, PostGIS 3.1 ou plus avec GEOS 3.9 ou plus), avec une tolérance fixée. Il est toujours intérieur au polygone, contrairement au centroïde d'une commune concave, et mieux centré que `ST_PointOnSurface` ;
+   - il porte les bornes de validité du polygone ;
+   - sa méthode et ses paramètres sont consignés dans le manifeste de la publication (ADR 0009).
 7. **Fond de carte sombre : Protomaps Basemaps**, auto-hébergé et recoloré par un style MapLibre propre à l'atlas.
 
 ## Conséquences
