@@ -16,3 +16,9 @@ Origine : `docs/adr/0011-licence-du-code.md`.
 
 - [ ] **Tranche 1 : lien vers le code source dans l'interface.** Le JavaScript envoyé au navigateur est généralement considéré comme une distribution du programme : l'application indique où trouver son code source (ADR 0011).
 - [ ] **Conditions de contribution du code.** Déclencheur : *avant de fusionner la première contribution extérieure.* Réexaminer des conditions de contribution qui n'autorisent un changement de licence que vers une autre licence libre, alignées sur celles prévues pour les données (`docs/politique-editoriale.md`, §4.2). D'ici là, les contributions sont acceptées sous DCO.
+
+## Base de référence
+
+Origine : `docs/schema.md`, section 4.
+
+- [ ] **Sauvegarde hors de la machine de la base de référence.** Prérequis au premier import de la tranche 1 : la base doit être sauvegardée hors de la machine dès le premier lot validé. Ses identifiants internes, publiés dans les tuiles et les fichiers de valeurs, ne sont jamais réattribués : la base ne peut pas être reconstruite par réimport.
