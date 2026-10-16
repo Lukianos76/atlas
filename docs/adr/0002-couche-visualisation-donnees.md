@@ -39,7 +39,11 @@ On retient l'**option hybride** :
 - les **aplats par entité** (choroplèthes, contours) sont des couches natives MapLibre ;
 - les **flux, densités et effets additifs** sont des couches deck.gl, intégrées par `MapLibreOverlay` en mode intercalé, placées sous les libellés avec `beforeId`, avec un blending additif réglé couche par couche.
 
+**deck.gl n'est pas utilisé dans la tranche 1**, qui n'affiche que des aplats (population communale). Il arrive avec la première vue de flux ou de densité.
+
 ## Conséquences
+
+- La tranche 1 ne dépend que de MapLibre : ni le poids de deck.gl, ni la question de sa compatibilité avec le globe ne la concernent.
 
 - Le cas le plus fréquent, à commencer par la tranche 1 (population communale), reste dans le format de style MapLibre, accessible aux contributeurs.
 - L'identité visuelle (additif, flux animés) est tenue sans réécrire de primitives géographiques.

@@ -7,7 +7,7 @@
 
 Quatre ensembles sont à héberger :
 
-1. **Contenu public statique** : l'application web, les archives PMTiles des états matérialisés publiés et le fond de carte Protomaps (ADR 0004). À l'échelle mondiale, ces archives se comptent en dizaines voire centaines de gigaoctets. Elles sont servies par requêtes HTTP partielles : le **coût de sortie réseau (egress)** devient le premier poste de dépense.
+1. **Contenu public statique** : l'application web, les publications (archives PMTiles par période et fichiers de valeurs) et le fond de carte Protomaps (ADR 0004). À l'échelle mondiale, ces archives se comptent en dizaines voire centaines de gigaoctets. Elles sont servies par requêtes HTTP partielles : le **coût de sortie réseau (egress)** devient le premier poste de dépense.
 2. **Base de référence PostGIS** (ADR 0003) : volumineuse à terme, à sauvegarder, non exposée au public en tranche 1.
 3. **Services dynamiques ultérieurs** : Martin pour la prévisualisation des contributions, une API de contribution.
 4. **Exécution des pipelines** (ADR 0006) : traitements par lots, parfois lourds (imports mondiaux, Tippecanoe).
@@ -39,6 +39,6 @@ Les fournisseurs précis sont choisis au moment du déploiement, sur des tarifs 
 
 - En tranche 1, il n'y a aucun service à exploiter en production : seulement des fichiers statiques à publier.
 - Le coût de diffusion des tuiles reste faible même à l'échelle mondiale, à condition de retenir un stockage objet sans frais d'egress.
-- La publication d'un état matérialisé consiste à générer son archive et à la téléverser : cette étape est à automatiser dans les pipelines.
+- Une publication consiste à générer son archive et ses fichiers de valeurs, puis à les téléverser sous leur identifiant de publication : cette étape est à automatiser dans les pipelines.
 - Le passage à la phase contributive demandera de mettre en place l'exploitation du serveur dédié : sauvegardes de PostGIS, mises à jour, supervision.
 - Le choix des fournisseurs reste ouvert. Il sera consigné, avec la pesée de la souveraineté européenne, au moment du déploiement.

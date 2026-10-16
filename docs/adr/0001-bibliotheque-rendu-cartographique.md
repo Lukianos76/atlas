@@ -17,7 +17,8 @@ La bibliothèque doit aussi accueillir une couche de visualisation de données p
 
 Vérifications faites avec Context7 (octobre 2026) :
 
-- MapLibre GL JS propose une projection globe native (`map.setProjection({type: 'globe'})`), avec une transition automatique vers Mercator aux grands zooms ;
+- MapLibre GL JS propose une projection globe native (`map.setProjection({type: 'globe'})`), avec une transition automatique vers Mercator aux grands zooms. Le globe est apparu avec la **version 5.0.0** (janvier 2025, d'après la newsletter MapLibre de décembre 2024 et la page « Globe View » de la feuille de route) ;
+- la **version 6** est la majeure actuelle. Elle n'est plus livrée qu'en ES modules, et son guide de migration recommande d'épingler une majeure explicite (`^6.0.0`) ;
 - ses couches personnalisées (*custom layers*) fonctionnent en globe, grâce aux fonctions de projection injectées dans les shaders ;
 - MapLibre lit les tuiles MVT et le nouveau format MLT ;
 - deck.gl 9.3 s'intègre à MapLibre (version 4.5.1 ou plus) en mode intercalé, en Mercator comme en globe.
@@ -34,9 +35,12 @@ Vérifications faites avec Context7 (octobre 2026) :
 
 ## Décision
 
-On retient **MapLibre GL JS** comme bibliothèque de rendu cartographique.
+On retient **MapLibre GL JS** comme bibliothèque de rendu cartographique, en **majeure 6 épinglée (`^6.0.0`)**. Le globe exige au minimum la version 5.0.0.
 
 ## Conséquences
+
+- La v6 n'existe qu'en ES modules : le worker de MapLibre doit être configuré avec le bundler du front (ADR 0008). La version exacte est fixée par le fichier de verrouillage des dépendances.
+- Le passage à une majeure suivante fera l'objet d'une décision explicite.
 
 - Le fond de carte et les aplats thématiques s'écrivent dans le format de style MapLibre, ouvert et documenté.
 - Le globe est disponible nativement aux petits zooms, sans bibliothèque supplémentaire.
