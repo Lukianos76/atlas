@@ -4,16 +4,27 @@ Atlas interactif et collaboratif qui raconte le monde par la carte : données d�
 
 ## Commandes
 
-À compléter avec le squelette du projet (monorepo, ADR 0005).
+Monorepo (ADR 0005). Node 26 (`.node-version`), Python 3.14 (`pipelines/.python-version`). Commandes lancées depuis la racine du repo.
 
 | Usage | Front (`apps/web`, pnpm) | Pipelines (`pipelines/`, uv) |
 |---|---|---|
-| Installer | _à compléter_ | _à compléter_ |
-| Lancer | _à compléter_ | _à compléter_ |
-| Vérifier les types | _à compléter_ (tsc) | _à compléter_ (pyright) |
-| Lint et formatage | _à compléter_ (Biome) | _à compléter_ (Ruff) |
-| Tests unitaires | _à compléter_ (Vitest) | _à compléter_ (pytest) |
-| Tests de bout en bout | _à compléter_ (Playwright) | — |
+| Installer | `pnpm --dir apps/web install` puis `pnpm --dir apps/web exec playwright install chromium` | `uv sync --directory pipelines` |
+| Lancer | `pnpm --dir apps/web dev` | — (aucun pipeline dans le squelette) |
+| Vérifier les types | `pnpm --dir apps/web typecheck` (tsc) | `uv run --directory pipelines pyright` |
+| Lint et formatage | `pnpm --dir apps/web lint` (Biome ; `format` pour corriger) | `uv run --directory pipelines ruff format .` puis `ruff check .` |
+| Tests unitaires | `pnpm --dir apps/web test` (Vitest) | `uv run --directory pipelines pytest` |
+| Tests de bout en bout | `pnpm --dir apps/web e2e` (Playwright, sur le build de production) | — |
+
+| Usage | Commande |
+|---|---|
+| Base de développement : démarrer | `docker compose up -d --wait db-dev` |
+| Base de développement : migrer | `docker compose run --rm dbmate-dev up` |
+| Base de développement : recréer | `bash scripts/db-dev-reset.sh` |
+| Nouvelle migration | `docker compose run --rm dbmate-dev new <nom>` |
+| Base de référence : migrer (sur `main` uniquement) | `bash scripts/db-ref-migrate.sh` |
+| **Tout vérifier** | `bash check.sh` (ou `--web`, `--pipelines`, `--db`) |
+
+Un hook Claude Code (`.claude/settings.json`) formate et lint chaque fichier modifié : Biome sous `apps/web`, Ruff sous `pipelines`.
 
 ## Règles non négociables
 
@@ -22,7 +33,7 @@ Atlas interactif et collaboratif qui raconte le monde par la carte : données d�
 3. **TypeScript strict.** Le mode `strict` reste activé. Ne pas l'assouplir ni le contourner (`any`, `@ts-ignore`, `@ts-expect-error`, assertions `as` forcées) sans justification que j'ai validée.
 4. **Vérifications avant de déclarer une tâche terminée.** Sur chaque composant touché : vérification des types (tsc, pyright), lint et formatage (Biome côté front, Ruff côté pipelines), tests (Vitest, Playwright si l'interface change, pytest côté pipelines). Pour un lot d'import : les contrôles obligatoires du modèle (§10.5). Pour une publication de tuiles : les trois contrôles d'export de l'ADR 0004. Une vérification qui échoue ou qui n'a pas été lancée est signalée telle quelle, et la tâche n'est pas terminée.
 5. **Langue du code.** Les identifiants sont en anglais, selon le glossaire `docs/glossaire.md`. Un terme du modèle absent du glossaire n'est pas traduit à la volée : sa traduction est proposée pour ajout au glossaire. Commentaires et documentation en français.
-6. **Migrations immuables.** Une migration appliquée ne se modifie jamais ; toute évolution du schéma passe par une nouvelle migration.
+6. **Migrations immuables, en avant uniquement, deux bases.** Une migration appliquée ne se modifie jamais ; toute évolution du schéma passe par une nouvelle migration. Les migrations vont en avant uniquement : la section `-- migrate:down` reste vide, et une correction de schéma passe toujours par une nouvelle migration. La **base de référence** (données importées et validées) n'est migrée que depuis `main` (`scripts/db-ref-migrate.sh`) ; les branches n'utilisent que la **base de développement**, jetable, recréée par `scripts/db-dev-reset.sh`. Voir l'ADR 0010.
 7. **Rien de lourd ni de secret dans git.** Ni données (fichiers sources, exports, archives de tuiles), ni secrets. Les fichiers de test sont de petits extraits, avec leur source.
 8. **Une branche par tâche.** Aucun commit direct sur la branche principale.
 
@@ -47,6 +58,7 @@ Lire le document concerné **avant** de travailler sur le sujet. Leur contenu n'
 | Hébergement | `docs/adr/0007-hebergement.md` |
 | Front React, Vite, outillage, curseur temporel | `docs/adr/0008-framework-outillage-front.md` |
 | Fichiers de valeurs Parquet et manifeste | `docs/adr/0009-format-fichiers-valeurs.md` |
+| Outil et règles de migrations, deux bases | `docs/adr/0010-outil-migrations.md` |
 | Sources de géométries historiques (Bas-Rhin) | `docs/recherches/sources-geometries-historiques.md` |
 | Correspondance des termes du modèle en anglais | `docs/glossaire.md` |
 | Tâches identifiées, non engagées | `docs/backlog.md` |
