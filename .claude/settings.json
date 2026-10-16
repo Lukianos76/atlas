@@ -1,4 +1,22 @@
 {
+  "permissions": {
+    "deny": [
+      "Bash(docker *db-ref*)",
+      "Bash(docker *dbmate-ref*)",
+      "Bash(docker *atlas-ref*)",
+      "Bash(docker-compose *db-ref*)",
+      "Bash(docker-compose *dbmate-ref*)",
+      "Bash(docker-compose *atlas-ref*)",
+      "Bash(*db-ref-migrate.sh*)",
+      "PowerShell(docker *db-ref*)",
+      "PowerShell(docker *dbmate-ref*)",
+      "PowerShell(docker *atlas-ref*)",
+      "PowerShell(docker-compose *db-ref*)",
+      "PowerShell(docker-compose *dbmate-ref*)",
+      "PowerShell(docker-compose *atlas-ref*)",
+      "PowerShell(*db-ref-migrate.sh*)"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {

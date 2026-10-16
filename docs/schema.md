@@ -1,8 +1,8 @@
 # Schéma logique de la base (tranche 1)
 
-> **Statut** : version 1 (octobre 2026), soumise à validation. Décisions D1 à D5 et réponses A1 à A21 validées par le mainteneur le 2026-10-17 ; les points de la section 9 restent à valider.
+> **Statut** : version 1 (octobre 2026), soumise à validation. Décisions D1 à D5, réponses A1 à A21 et points N1 à N11 validés par le mainteneur le 2026-10-17, ainsi que les corrections du même jour : séparation des rôles et sa limite assumée (§5.13), immutabilité des contenus volumineux (§5.4, §5.11), imports rejouables (§5.8, §5.10). Les essais sur la base de développement sont consignés en section 12.
 > **Portée** : conception **logique** du schéma PostgreSQL 18 + PostGIS pour le seul périmètre de la tranche 1 (`docs/modele-donnees.md`, §14.2) : population communale du Bas-Rhin, géographie communale du COG et son historique depuis 1968, géographie courante d'ADMIN EXPRESS, séries de l'INSEE en géographie courante (dérivations externes) et recalcul par le graphe de filiation. Ce document ne contient aucun SQL de migration : les migrations (ADR 0010) en découleront.
-> **Références** : modèle de données (v3), ADR 0003, 0004, 0009 et 0010, glossaire (v1), politique éditoriale (v1). En cas d'écart, ces documents font foi ; les écarts proposés sont regroupés en section 8.
+> **Références** : modèle de données (v3.1), ADR 0003, 0004, 0009 et 0010, glossaire (v2), politique éditoriale (v1). En cas d'écart, ces documents font foi ; les révisions qu'il a entraînées sont regroupées en section 8.
 
 ---
 
@@ -15,6 +15,8 @@
 - **Valeurs de données non traduites** (glossaire, §1) : statuts juridiques, noms de niveaux, types d'objet du COG (`COM`, `COMA`, `COMD`) restent des valeurs `text`.
 - **Rien n'est effacé** (P7). Un trigger `BEFORE DELETE` refuse toute suppression, sur toutes les tables, et les droits `DELETE` et `TRUNCATE` ne sont pas accordés. Seules exceptions : les tables de liaison des citations, dans une transaction révisée (§5.3), et la procédure d'activation des partitions (§6).
 - **Principe de stockage** (réponses du mainteneur, §7) : si le modèle prévoit qu'un fait puisse être contesté ou daté, c'est une **assertion** ; ce qui peut se **déduire** n'est pas stocké en double.
+- **Contenus volumineux immuables** : un contenu volumineux (géométrie, et tout contenu de taille comparable à venir : zones floues, récits) ne se corrige jamais sur place. Une correction retire l'assertion et en crée une nouvelle, comme pour les citations ; les instantanés de révision le référencent sans le recopier (§5.11).
+- **Séparation des rôles** : l'identité d'un contributeur est celle du rôle PostgreSQL de connexion (`current_user`), jamais une valeur déclarée ; seul le rôle de vérification valide (§5.13).
 
 ---
 
@@ -120,7 +122,7 @@ Les bornes normalisées sont **recopiées** dans la table qui porte la période,
 | `(end_date_id, end_earliest)` | `historical_date (id, earliest)` | fin datée ou inconnue |
 | `(end_date_id, end_latest_dated)` | `historical_date (id, latest)` | fin datée |
 
-Pour une fin inconnue, la date qui atteste la disparition (`end_latest`) est appuyée par une citation de rôle `date` ; elle n'a pas de lien propre vers `historical_date` (§9, N2). **À vérifier** en base de développement : clé étrangère sur une colonne générée stockée (`end_latest_dated`).
+Pour une fin inconnue, la date qui atteste la disparition (`end_latest`) est appuyée par une citation de rôle `date` ; elle n'a pas de lien propre vers `historical_date` (§9, N2). La clé étrangère sur la colonne générée stockée `end_latest_dated` a été vérifiée en base de développement (§12, essai 3).
 
 ### 3.4 Index
 
@@ -161,7 +163,10 @@ Catégories de premier niveau (codes proposés en section 10) : `political`, `ad
 | `id` | `integer` identité | clé primaire |
 | `contributor_kind` | enum (`human`, `agent`) | |
 | `display_name` | `text` | |
+| `db_role` | `name` | `UNIQUE` ; rôle PostgreSQL de connexion du contributeur (§5.13) |
 | | | `UNIQUE (id, contributor_kind)`, cible de la clé de `import_batch` (A13) |
+
+Un contributeur a exactement un rôle de connexion, et un rôle de connexion exactement un contributeur. Les triggers retrouvent le contributeur par `db_role = current_user` ; un rôle sans contributeur ne peut rien écrire.
 
 **`entity`** : identité nue (P2).
 
@@ -350,7 +355,9 @@ La relation `recognizes`, qui vise une assertion, n'entre pas dans la tranche 1 
 | `source_crs` | `text` | système de coordonnées de la source (« EPSG:2154 » pour ADMIN EXPRESS), réponse A21 |
 | `parent_geometry_id` | `bigint` → `geometry_assertion` | `NULL` |
 
-Stockage en WGS 84 (A21) ; les surfaces se calculent en `geography` ou dans une projection adaptée. La validité OGC des géométries est un **contrôle automatique du lot**, pas un `CHECK` : corriger une géométrie de la source serait la modifier. Zones floues et géométries dérivées de plusieurs parents : hors tranche 1 (section 11). Le point des cercles proportionnels n'est **pas stocké** (A17, §8.2).
+Stockage en WGS 84 (A21) ; les surfaces se calculent en `geography` ou dans une projection adaptée.
+
+**Contenu immuable** (correction du 2026-10-17) : un trigger `BEFORE UPDATE` refuse toute modification de `geometry_assertion`. Une géométrie erronée se corrige en **retirant** l'assertion et en **créant** une nouvelle assertion, avec sa propre géométrie et ses citations ; le motif du retrait nomme la nouvelle assertion. Le tronc commun reste modifiable selon les règles de révision : clore la période d'une géométrie quand une limite change (modèle §6.2) ne touche pas au contenu. La validité OGC des géométries est un **contrôle automatique du lot**, pas un `CHECK` : corriger une géométrie de la source serait la modifier. Zones floues et géométries dérivées de plusieurs parents : hors tranche 1 (section 11). Le point des cercles proportionnels n'est **pas stocké** (A17, §8.2).
 
 ### 5.5 Événements et assertions sur les événements
 
@@ -436,10 +443,12 @@ Les seuils et leur justification viennent d'un **fichier déclaratif versionné*
 | `certainty` | enum | sans valeur par défaut |
 | `authority_entity_id` | `integer` → `entity` | `NULL` |
 | `import_batch_id` | `integer` → `import_batch` | `NULL` |
-| `locator` | `text` | `NULL` ; `CHECK ((import_batch_id IS NULL) = (locator IS NULL))` |
+| `locator` | `text` | `NULL` ; `CHECK ((import_batch_id IS NULL) = (locator IS NULL))` ; désigne la **cellule** (voir ci-dessous) |
 
 - Clé primaire `(variable_id, id)` ; toute contrainte d'unicité inclut `variable_id`.
-- Index : `(variable_id, entity_id, reference_start_latest)`, `(import_batch_id)`, `(derivation_id) WHERE derivation_id IS NOT NULL`.
+- **Import rejouable** (correction du 2026-10-17) : `UNIQUE (variable_id, import_batch_id, locator)`. Rejouer tout ou partie d'un lot ne crée aucun doublon : une cellule de la source ne produit qu'une observation par lot. Les observations hors lot (`import_batch_id` et `locator` `NULL`) ne sont pas concernées, les `NULL` étant distincts.
+- **Localisateur d'une observation importée** : il désigne la cellule, ligne **et** colonne, pas seulement la ligne, puisqu'une ligne de la source porte souvent plusieurs valeurs (populations de plusieurs recensements). Forme : `row=<n>;column=<nom>`, où `n` est le numéro de ligne dans le fichier publié (ligne d'en-tête = 1) et `nom` l'en-tête de colonne tel que publié ; pour un classeur, `sheet=<nom>;row=<n>;column=<nom>`. La base vérifie seulement que le localisateur n'est pas vide ; la forme est un contrôle automatique du lot.
+- Index : `(variable_id, entity_id, reference_start_latest)`, `(derivation_id) WHERE derivation_id IS NOT NULL`. L'index d'unicité ci-dessus sert aussi aux lectures par lot.
 - **Pas de colonne de statut** : le statut effectif se lit sur les révisions (§5.12). Valider un lot ne réécrit aucune observation.
 - **P3** (D3) : le `CHECK` couvre le cas « lot et localisateur ». Sinon, le trigger de contrainte différé, `WHEN (NEW.import_batch_id IS NULL)`, exige au moins une ligne dans `observation_citation`, **ou** une dérivation interne avec au moins une ligne dans `derivation_input`.
 - Les rôles d'entité multiples (flux) passeront par une table `observation_entity (variable_id, observation_id, entity_id, entity_role)`, décrite ici et reportée.
@@ -463,7 +472,7 @@ Les seuils et leur justification viennent d'un **fichier déclaratif versionné*
 | `contributor_id` | `integer` → `contributor` | |
 | `recorded_at` | `timestamptz` | fixé par trigger à `now()` |
 
-Une exécution de recalcul vaut pour une date source et une date de géographie : sa table de passage est unique (§9, N5).
+Une exécution de recalcul vaut pour une date source et une date de géographie : sa table de passage est unique (§9, N5). `derivation`, `derivation_input`, `crosswalk` et `crosswalk_transfer` sont **immuables** (trigger `BEFORE UPDATE`) : une dérivation à refaire est une nouvelle exécution.
 
 **`derivation_input`** : les entrées restent liées **par observation** (A8).
 
@@ -501,12 +510,18 @@ Une exécution de recalcul vaut pour une date source et une date de géographie 
 | `validation_report` | `jsonb` | `NULL` ; contrôles, comptes, anomalies (A19), échantillon tiré |
 | `batch_status` | enum (`proposed`, `validated`, `partially_validated`, `rejected`) | état courant, recopié de la dernière révision du lot |
 
+`procedure` et `scope` sont figés à la création ; `validation_report` ne s'écrit que tant que le lot est `proposed`, et se fige à la décision. La révision d'un lot n'a pas d'instantané : ce gel garantit que le rapport sur lequel le vérificateur a décidé ne change plus.
+
 Vérificateur (réponse A13), entièrement déclaratif :
 - clé étrangère `(reviewer_id, reviewer_kind) → contributor (id, contributor_kind)` ;
 - `CHECK (reviewer_kind = 'human')` ;
 - `CHECK (reviewer_id <> owner_id)` ;
 - `CHECK ((reviewer_id IS NULL) = (reviewer_kind IS NULL))` ;
 - `CHECK (batch_status = 'proposed' OR (reviewer_id IS NOT NULL AND validation_report IS NOT NULL))`.
+
+`reviewer_id` n'est pas déclaré : à la décision, le trigger le fixe au contributeur de `current_user`, qui doit être membre du rôle de vérification (§5.13).
+
+**Version de source déjà importée** (correction du 2026-10-17). Contrôle automatique obligatoire de la procédure d'import (modèle §10.5) : un nouveau lot est refusé, sans relecture, si un lot `validated` ou `partially_validated` couvre déjà la même version de la source (même `source_work`, donc même millésime) avec un périmètre qui recoupe le sien (même variable, territoires et périodes qui se chevauchent). Un lot `rejected` ne bloque pas : le lot corrigé est soumis comme un nouveau lot (§10.5, règle 5). Un erratum, publié comme une nouvelle version, est une autre œuvre et n'est pas bloqué. Le périmètre étant en `jsonb`, ce contrôle est fait par le pipeline d'import ; la base ne garantit que l'absence de doublon à l'intérieur d'un lot (§5.8). Révision proposée du modèle : §8.4.
 
 Le statut est historisé par les **révisions du lot** (réponse A12). Valider le lot passe au statut `validated` les assertions du lot encore au statut `proposed` (modèle §10.5), ce qui crée leurs révisions ; les observations du lot, elles, ne sont pas réécrites.
 
@@ -526,7 +541,7 @@ Le statut est historisé par les **révisions du lot** (réponse A12). Valider l
 | `import_batch_id` | `integer` → `import_batch` | `NULL` ; lot dont la révision fait partie, ou lot visé |
 | `assertion_id` | `bigint` → `assertion` | `NULL` |
 | `observation_variable_id`, `observation_id` | → `observation` | `NULL` |
-| `snapshot` | `jsonb` | `NULL` ; état **résultant** : tronc, contenu du type, liens de citation |
+| `snapshot` | `jsonb` | `NULL` ; état **résultant** : tronc, contenu du type, liens de citation ; les contenus immuables sont **référencés**, pas recopiés |
 
 Cibles, par `CHECK` :
 - révision d'**assertion** : `assertion_id` seul, avec `review_status` et `snapshot` ;
@@ -537,8 +552,23 @@ Index : `(assertion_id, recorded_at, id)`, `(observation_variable_id, observatio
 
 `previous_content` (modèle §10.1) n'est pas stocké : c'est l'instantané de la révision précédente.
 
+**Contenus référencés, non recopiés** (correction du 2026-10-17). L'instantané d'une `geometry_assertion` ne contient pas `shape` : la géométrie étant immuable (§5.4), la ligne de `geometry_assertion` est la même à toute date R, et l'identifiant de l'assertion suffit. Revue des autres contenus volumineux :
+
+| Contenu | Traitement |
+|---|---|
+| Géométrie (`shape`) | Immuable, référencée par l'identifiant de l'assertion |
+| Citations (extrait, localisateur) | Déjà immuables ; l'instantané ne garde que les identifiants des liens |
+| Dérivation, entrées, table de passage | Immuables (§5.9), hors instantané |
+| `validation_report`, `procedure`, `scope` du lot | Figés (§5.10) ; la révision du lot n'a pas d'instantané |
+| `historical_date` | Immuable ; l'instantané garde `start_date_id` et `end_date_id` |
+| Nom, statut, identifiant, appartenance, relation, transfert, participation, dates d'événement | Petits contenus, recopiés dans l'instantané |
+| Observation | Petit contenu, recopié dans l'instantané de sa révision individuelle |
+| À venir : zones floues (`core`, `max_extent`), récits | Même règle que les géométries, à leur arrivée |
+
 **Mécanique des triggers**
-- Toute écriture révisée lit le contexte de la transaction dans des variables `SET LOCAL` : `atlas.contributor_id` (obligatoire), `atlas.reason`, `atlas.import_batch_id`. Si le contributeur manque, l'écriture est refusée.
+- Le **contributeur** n'est jamais déclaré : les triggers le retrouvent par `contributor.db_role = current_user` (§5.13). Toutes les fonctions de trigger sont `SECURITY INVOKER`, pour que `current_user` reste le rôle de connexion.
+- Le reste du contexte est déclaratif, dans des variables `SET LOCAL` : `atlas.reason`, `atlas.import_batch_id`. Ces valeurs ne confèrent aucun droit.
+- `revision` ne reçoit que des lignes écrites par les triggers : un trigger `BEFORE INSERT` refuse l'insertion si `pg_trigger_depth() < 2` (insertion directe), et fixe lui-même `contributor_id` et `recorded_at`.
 - **Assertions** : un trigger de contrainte différé, sur `assertion`, les tables de type et `assertion_citation`, écrit au commit **au plus une révision par assertion et par transaction** : il ne fait rien si une révision de cette assertion a déjà ce `recorded_at`. Comme il s'exécute au commit, l'instantané reflète l'état final. L'opération se **déduit** : `create` si l'assertion est née dans la transaction, `review_status_change` si seul le statut a changé, `correct` sinon.
 - **Observations** : trigger `AFTER INSERT … WHEN (NEW.import_batch_id IS NULL)` et `AFTER UPDATE`. Une insertion par lot n'appelle **aucune** fonction ligne par ligne : la clause `WHEN` s'évalue sans appel, et la révision du lot vaut pour toutes ses observations (ADR 0003). Une correction ultérieure crée une révision individuelle.
 - **Lots** : trigger `AFTER INSERT OR UPDATE OF batch_status` sur `import_batch`, qui écrit la révision du lot.
@@ -554,6 +584,48 @@ Index : `(assertion_id, recorded_at, id)`, `(observation_variable_id, observatio
   - Vue simple en tranche 1 ; un cache maintenu par trigger ne viendra que si le banc d'essai l'exige.
 - **Transaction et temps R** : `recorded_at` est l'heure de début de la transaction. Un état au temps R n'est reproductible que pour un R antérieur à la plus ancienne transaction en cours ; une publication fixe donc un R passé.
 
+### 5.13 Rôles et séparation des droits
+
+Correction du 2026-10-17. Une variable de session peut être renseignée par toute connexion : si le contributeur était déclaré, un agent pourrait valider son propre lot. L'identité d'un contributeur est donc celle de son **rôle de connexion**, et le droit de valider est attaché à un **rôle PostgreSQL**.
+
+**Rôles de groupe** (`NOLOGIN`), créés par migration :
+
+| Rôle | Droits |
+|---|---|
+| `atlas_owner` | Propriétaire du schéma ; seul rôle des migrations. Jamais utilisé pour écrire des données |
+| `atlas_import` | Lecture de tout ; insertion des entités, événements, assertions et tables de type, citations, dates historiques, œuvres, observations, dérivations, lots ; correction et contestation. **Jamais** de validation |
+| `atlas_review` | Les droits d'`atlas_import`, plus les décisions : passage à `validated` ou `withdrawn` d'une assertion ou d'une observation, et à `validated`, `partially_validated` ou `rejected` d'un lot |
+
+Aucun des deux n'a de droit `DELETE` ni `TRUNCATE`, ni de droit de créer des objets (donc pas de trigger qui leur appartienne).
+
+**Rôles de connexion** (`LOGIN`) : un par contributeur, membre d'un seul rôle de groupe, enregistré dans `contributor.db_role`. Un rôle de connexion membre d'`atlas_review` correspond à un contributeur `human`. Les rôles de connexion portent des mots de passe : ils ne sont **jamais créés par une migration** (rien de secret dans git), mais par un script qui demande le mot de passe de façon interactive.
+
+**Garde des statuts** : un trigger `BEFORE INSERT OR UPDATE` sur `assertion`, `observation` (via ses révisions) et `import_batch` vérifie chaque transition avec `pg_has_role(current_user, 'atlas_review', 'MEMBER')` :
+
+| Transition | `atlas_import` | `atlas_review` |
+|---|---|---|
+| création en `proposed` | oui | oui |
+| `validated` → `contested` (contestation sourcée) | oui | oui |
+| `withdrawn` → `proposed` (réouverture) | oui | oui |
+| `proposed` → `validated` ; `contested` → `validated` | non | oui |
+| `proposed` → `withdrawn` ; `contested` → `withdrawn` | non | oui |
+| lot `proposed` → `validated`, `partially_validated`, `rejected` | non | oui |
+
+Une correction de contenu sur une assertion `validated` la ramène à `proposed` : elle repasse en relecture.
+
+**Identifiants** :
+- le `.env` lu par les pipelines et par Claude Code ne contient que les identifiants d'un rôle de connexion membre d'`atlas_import` ;
+- les identifiants d'un rôle de vérification ne figurent **jamais** dans le `.env` ni dans aucun fichier lisible par les pipelines ou par Claude Code : le vérificateur humain les saisit lui-même à la connexion ;
+- la séparation ne tient que si le **superutilisateur** et `atlas_owner` sont eux aussi hors de portée : un superutilisateur peut prendre n'importe quel rôle (§12, essai 4), et le propriétaire peut désactiver les triggers. Aujourd'hui, `ATLAS_REF_USER` dans `.env` est le superutilisateur créé par l'image PostGIS, et `scripts/db-ref-migrate.sh` s'en sert. Ses identifiants doivent sortir du `.env` avant le premier import (`docs/backlog.md`).
+
+**Base de développement** : jetable, elle reçoit les mêmes rôles, avec des rôles de connexion d'essai dont les mots de passe, connus, figurent dans `.env.example` (accepté par le mainteneur le 2026-10-17). Ils n'existent pas sur la base de référence, et ses rôles n'ont rien en commun avec ceux-ci.
+
+**Connexions dans le conteneur de référence.** Le `pg_hba.conf` de l'image PostGIS accepte sans mot de passe (`trust`) les connexions locales et en boucle locale (constaté sur `db-dev`, même image : §12, essai 5) : `docker exec … psql` contournerait les rôles. Pour `db-ref`, un fichier versionné, `db/pg_hba-ref.conf`, exige `scram-sha-256` pour toute connexion, locale comprise. Il est monté en lecture seule et désigné par `-c hba_file` (`compose.yaml`), ce qui vaut aussi pour un volume déjà initialisé, contrairement à `POSTGRES_INITDB_ARGS`. Le contrôle de santé (`pg_isready`) ne s'authentifie pas et fonctionne toujours. `db-dev` garde la configuration de l'image.
+
+**Règles de refus de Claude Code** (`.claude/settings.json`, `permissions.deny`) : toute commande `docker` ou `docker-compose`, en Bash comme en PowerShell, qui mentionne `db-ref`, `dbmate-ref` ou `atlas-ref` (service, conteneur `atlas-db-ref-1`, volume `atlas_atlas-ref`), et le lancement de `scripts/db-ref-migrate.sh`, qui ne se fait que depuis `main` et par un humain.
+
+**Limite assumée.** La séparation des rôles protège contre une **erreur de l'agent** (un pipeline ou Claude Code qui validerait son propre lot), **pas contre un acteur qui contrôle la machine**. Qui dispose de Docker sur l'hôte peut lire les fichiers du volume, remplacer `compose.yaml` ou `pg_hba-ref.conf`, ou démarrer un autre conteneur sur le volume ; les règles de refus portent sur le texte des commandes et se contournent par une indirection (variable, script). Ces mesures rendent l'erreur impossible par inadvertance et visible dans l'historique ; elles ne remplacent ni le contrôle d'accès à la machine, ni la sauvegarde hors de la machine (§4), ni la vérification humaine des lots.
+
 ---
 
 ## 6. Activation du partitionnement des observations
@@ -561,7 +633,7 @@ Index : `(assertion_id, recorded_at, id)`, `(observation_variable_id, observatio
 PostgreSQL refuse de créer ou d'attacher une partition tant que la partition par défaut contient des lignes qui lui reviendraient. L'activation pour une variable X se fait donc dans **une seule migration**, exécutée dans une seule transaction (comportement par défaut de dbmate) :
 
 1. **Relever** les comptes de lignes de `observation`, par variable.
-2. **Retirer** les clés étrangères qui visent `observation` (`observation_citation`, `derivation_input` ×2, `revision`). PostgreSQL refuse de détacher une partition dont des lignes sont référencées (**à vérifier** en base de développement).
+2. **Retirer** les clés étrangères qui visent `observation` (`observation_citation`, `derivation_input` ×2, `revision`). PostgreSQL refuse de détacher une partition dont des lignes sont référencées (vérifié, §12, essai 1).
 3. `ALTER TABLE observation DETACH PARTITION observation_default`. Les triggers clonés (y compris le refus de suppression) sont retirés de la table détachée. `DETACH … CONCURRENTLY` est interdit en présence d'une partition par défaut, et ne s'exécute pas dans une transaction.
 4. **Créer** `observation_v<X>` comme table ordinaire, avec les mêmes colonnes **sans identité** (une partition hérite de l'identité de la table partitionnée et ne peut avoir la sienne), et `CHECK (variable_id = X)`.
 5. **Déplacer** : `INSERT INTO observation_v<X> SELECT * FROM observation_default WHERE variable_id = X`, puis `DELETE FROM observation_default WHERE variable_id = X`. Les identifiants sont conservés. Ce déplacement n'est pas une suppression au sens de P7 : les lignes changent de partition, pas de contenu.
@@ -572,7 +644,7 @@ PostgreSQL refuse de créer ou d'attacher une partition tant que la partition pa
 
 L'attachement prend un verrou `ACCESS EXCLUSIVE` sur la partition par défaut. La base est donc indisponible en écriture pendant la migration, qui se lance hors des imports.
 
-Le sous-partitionnement (hachage de l'entité, ou zone géographique), nécessaire quand une seule variable dépasse le milliard de lignes, sera tranché par le banc d'essai de l'ADR 0006. **À vérifier** avant la première migration : le comportement des triggers de contrainte différés sur une table partitionnée.
+Le sous-partitionnement (hachage de l'entité, ou zone géographique), nécessaire quand une seule variable dépasse le milliard de lignes, sera tranché par le banc d'essai de l'ADR 0006. Les triggers de contrainte différés, avec clause `WHEN`, fonctionnent sur une table partitionnée et sont clonés sur les partitions créées ensuite (§12, essai 2).
 
 ---
 
@@ -608,7 +680,7 @@ Réponses du mainteneur (2026-10-17), intégrées aux tables ci-dessus.
 
 ## 8. Révisions proposées des documents de référence
 
-Ces révisions ne sont **pas appliquées** : elles le seront après validation, par une modification du document concerné.
+Révisions 8.1 et 8.2 validées le 2026-10-17 et appliquées aux ADR 0003, 0004 et 0009. Révision 8.4 validée le 2026-10-17 et appliquée au modèle (version 3.1) ; l'ADR 0003 est aligné sur le localisateur au niveau de la cellule. Le texte ci-dessous garde la trace des propositions.
 
 ### 8.1 ADR 0003, section « Citations des imports en masse »
 
@@ -634,11 +706,21 @@ Ajouter au manifeste (ADR 0009, `publication.json`) les **procédés de représe
 
 En tranche 1, la valeur INSEE affichée par défaut (Q13) n'est pas une préférence stockée : la règle est appliquée à l'export et consignée dans le manifeste (A18). L'écart prend fin avec les tables de préférences (tranche 2). Il peut être signalé dans le §14 du modèle.
 
+### 8.4 Modèle, §10.5 : contrôles de la tranche 1
+
+Ajouter au tableau des paramètres de la tranche 1 la ligne :
+
+> | Version déjà importée | Le lot est refusé si un lot validé ou partiellement validé couvre déjà la même version de la source (même œuvre, même millésime) sur un périmètre qui recoupe le sien. Un lot rejeté ne bloque pas ; un erratum est une autre version |
+
+Et préciser, dans les règles du lot, que le localisateur d'une valeur importée désigne la **cellule** (ligne et colonne), pas seulement la ligne.
+
+Le modèle est figé pour la tranche 1 : cette révision passe par une nouvelle version du document, après validation.
+
 ---
 
-## 9. Points nouveaux soumis à validation
+## 9. Points nouveaux issus de la conception
 
-Points qui découlent de la conception et que le modèle ne tranche pas.
+Points qui découlent de la conception et que le modèle ne tranche pas. **Validés par le mainteneur le 2026-10-17.**
 
 | # | Point | Proposition |
 |---|---|---|
@@ -658,7 +740,7 @@ Points qui découlent de la conception et que le modèle ne tranche pas.
 
 ## 10. Termes proposés pour le glossaire
 
-Non appliqués à `docs/glossaire.md` avant validation (CLAUDE.md, règle 5).
+Validés le 2026-10-17 et ajoutés à `docs/glossaire.md` (version 2) (CLAUDE.md, règle 5).
 
 | Français | Anglais | Justification |
 |---|---|---|
@@ -692,6 +774,8 @@ Non appliqués à `docs/glossaire.md` avant validation (CLAUDE.md, règle 5).
 | remplacée le (fin de la période de transaction) | `superseded_at` | D4, vue `revision_period` |
 | entités d'une observation | `observation_entity` | Réponse A7 |
 | tables de liaison | `assertion_citation`, `observation_citation`, `derivation_input`, `crosswalk_transfer` | Composés de termes existants |
+| rôle de connexion d'un contributeur | `db_role` | §5.13 |
+| rôles de groupe : propriétaire, import, vérification | `atlas_owner`, `atlas_import`, `atlas_review` | §5.13 |
 
 ---
 
@@ -706,3 +790,35 @@ Reportés, avec leur déclencheur :
 - **Anomalies** comme table (`anomaly`) : en tranche 1, rapport de validation (A19).
 - **Relation `recognizes`** et souveraineté, contrôle de fait : tranche 2.
 - **Correspondance entre variables** (`variable_mapping`) et entre niveaux (Q15) : tranche 2.
+
+---
+
+## 12. Essais sur la base de développement
+
+Petits essais SQL, le 2026-10-17, sur PostgreSQL 18.6 (image `postgis/postgis:18-3.6`), dans une base jetable `atlas_essai` créée puis supprimée dans `db-dev`. Ils lèvent les trois points « à vérifier » du document et éprouvent la séparation des rôles (§5.13). Les scripts ne sont pas versionnés : les migrations reprendront ces constructions, et `check.sh` les éprouvera.
+
+| # | Essai | Résultat |
+|---|---|---|
+| 1a | `DETACH PARTITION` de la partition par défaut dont une ligne est référencée par une clé étrangère | **Refusé** : `removing partition "obs_default" violates foreign key constraint`. D'où l'étape 2 de la procédure (§6) |
+| 1b | Créer une partition `FOR VALUES IN (2)` quand la partition par défaut contient une ligne de la variable 2 | **Refusé** : `updated partition constraint for default partition "obs_default" would be violated by some row` |
+| 1c | Procédure complète du §6 en une transaction (retrait de la clé, détachement, table sans identité avec `CHECK`, déplacement, rattachement, `CHECK` sur la partition par défaut, rattachement par défaut, clé rétablie) | **Réussie** : lignes dans les bonnes partitions, identifiants conservés ; une insertion ultérieure dans la variable 1 reçoit l'identifiant suivant de la séquence de la table partitionnée et va dans la nouvelle partition |
+| 2a | `CREATE CONSTRAINT TRIGGER … DEFERRABLE INITIALLY DEFERRED … FOR EACH ROW WHEN (new.batch IS NULL)` sur une table partitionnée | **Accepté** ; le trigger est cloné sur la partition par défaut |
+| 2b | Insertion d'une ligne de lot (`batch` renseigné) sans citation | **Acceptée** : la clause `WHEN` écarte le contrôle |
+| 2c | Insertion d'une ligne hors lot sans citation | Insertion acceptée, **commit refusé** par le trigger différé |
+| 2d | Ligne hors lot et citation insérées dans la même transaction | **Acceptée** au commit |
+| 2e | Partition créée **après** le trigger, puis insertion hors lot sans citation | Le trigger est **cloné** sur la nouvelle partition ; commit refusé |
+| 3a | Clé étrangère composite `(end_date_id, end_latest_dated)`, où `end_latest_dated` est une colonne générée stockée | **Acceptée** à la création |
+| 3b | Fin datée conforme à la date historique | Acceptée |
+| 3c | Fin datée dont la borne au plus tard diffère de la date historique | **Refusée** par la clé étrangère |
+| 3d | Fin inconnue, `end_latest` libre | Acceptée : la colonne générée vaut `NULL`, la clé est inactive |
+| 3e | Expression `CASE` du noyau quand les bornes se croisent | Renvoie `empty`, sans erreur |
+| 4a | Rôle de connexion membre du rôle d'import : passage d'une assertion à `validated` | **Refusé** par la garde des statuts (`pg_has_role`) |
+| 4b | Même rôle : insertion directe dans `revision` | **Refusée** (`pg_trigger_depth() < 2`) |
+| 4c | Même rôle, connecté avec ses propres identifiants : `SET ROLE` vers le rôle de vérification ou vers un vérificateur, `SET SESSION AUTHORIZATION` | **Refusés** (`permission denied`) |
+| 4d | Rôle de connexion membre du rôle de vérification : validation | Acceptée ; la révision porte le contributeur retrouvé par `current_user` |
+| 4e | Session ouverte avec le superutilisateur : `SET ROLE` vers n'importe quel rôle | **Accepté** : le superutilisateur contourne la séparation. D'où l'exigence que ses identifiants sortent du `.env` (§5.13) |
+| 5a | Configuration de l'image PostGIS sur `db-dev` : `pg_hba.conf` | `local` et `host 127.0.0.1/32`, `::1/128` en **`trust`** : `docker exec … psql` entre sans mot de passe |
+| 5b | Conteneur jetable de la même image, avec `db/pg_hba-ref.conf` monté en lecture seule et `-c hba_file` : initialisation sur volume neuf | **Réussie**, extensions PostGIS comprises (le script d'entrée fournit le mot de passe pendant l'initialisation) ; `pg_isready` répond |
+| 5c | Même conteneur : `psql` local, en boucle locale, et en tant qu'utilisateur système `postgres`, sans mot de passe | **Refusés** (`fe_sendauth: no password supplied`) ; avec mot de passe : accepté, `hba_file` = `/etc/postgresql/pg_hba.conf` |
+| 5d | Même conteneur : `root` modifie le fichier monté | **Refusé** (`Read-only file system`) |
+| 6 | Règle de refus de `.claude/settings.json` : `docker compose … ps db-ref` lancé par Claude Code | **Refusé** par Claude Code avant exécution |
