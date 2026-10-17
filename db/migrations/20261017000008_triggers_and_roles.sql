@@ -499,11 +499,12 @@ BEGIN
       v_operation := 'review_status_change';
       v_status := v_requested;
     ELSE
+      -- Une correction de contenu ignore le statut demandé : une observation validée
+      -- repasse toujours en relecture (E14).
       v_operation := 'correct';
-      v_status := coalesce(
-        v_requested,
-        CASE WHEN v_previous = 'validated' THEN 'proposed'::review_status ELSE v_previous END
-      );
+      v_status := CASE
+        WHEN v_previous = 'validated' THEN 'proposed'::review_status ELSE v_previous
+      END;
     END IF;
   END IF;
   INSERT INTO revision (
@@ -614,6 +615,13 @@ BEGIN
     AND NEW.validation_report IS DISTINCT FROM OLD.validation_report THEN
     RAISE EXCEPTION 'lot % : rapport de validation figé après la décision', OLD.id
       USING ERRCODE = 'restrict_violation', CONSTRAINT = 'batch_frozen';
+  END IF;
+  -- Le rapport s'écrit par le responsable du lot ou par le rôle de vérification (E14).
+  IF NEW.validation_report IS DISTINCT FROM OLD.validation_report
+    AND current_contributor() <> OLD.owner_id
+    AND NOT pg_has_role(current_user, 'atlas_review', 'MEMBER') THEN
+    RAISE EXCEPTION 'lot % : rapport réservé au responsable et au rôle de vérification', OLD.id
+      USING ERRCODE = 'insufficient_privilege', CONSTRAINT = 'batch_report_owner';
   END IF;
   IF NEW.batch_status IS DISTINCT FROM OLD.batch_status THEN
     IF OLD.batch_status <> 'proposed' OR NEW.batch_status = 'proposed' THEN
@@ -901,7 +909,26 @@ TO atlas_import;
 -- transaction révisée (§5.3, E7).
 GRANT DELETE ON assertion_citation TO atlas_import;
 
+-- Chemin de recherche fixé sur les gardes d'identité et de statut (E14) : défense en
+-- profondeur contre le masquage d'une table par un objet temporaire. Pas sur les
+-- fonctions appelées à chaque ligne : un `search_path` fixé empêche l'intégration
+-- d'une fonction SQL dans la requête qui l'appelle.
+ALTER FUNCTION current_contributor() SET search_path = public, pg_catalog, pg_temp;
+ALTER FUNCTION batch_open_to_caller(integer) SET search_path = public, pg_catalog, pg_temp;
+ALTER FUNCTION check_review_status_transition(review_status, review_status, boolean)
+  SET search_path = public, pg_catalog, pg_temp;
+
 RESET ROLE;
+
+-- Aucun objet temporaire (E14) : une table temporaire masquerait une table du schéma
+-- dans les fonctions SECURITY INVOKER, et un trigger posé sur elle contournerait la
+-- garde `pg_trigger_depth()` de `revision`. Les rôles de groupe n'ont de droit de
+-- création dans aucun schéma ; ceci retire le dernier espace où ils créaient.
+DO $$
+BEGIN
+  EXECUTE format('REVOKE TEMPORARY ON DATABASE %I FROM PUBLIC', current_database());
+END
+$$;
 
 -- Le rôle de vérification a les droits du rôle d'import ; ses décisions sont
 -- contrôlées par la garde des statuts. Accorder l'appartenance à un rôle exige le

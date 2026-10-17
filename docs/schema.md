@@ -578,7 +578,7 @@ Index : `(assertion_id, recorded_at, id)`, `(observation_variable_id, observatio
 - Le reste du contexte est déclaratif, dans des variables `SET LOCAL` : `atlas.reason`, `atlas.import_batch_id`. Ces valeurs ne confèrent aucun droit.
 - `revision` ne reçoit que des lignes écrites par les triggers : un trigger `BEFORE INSERT` refuse l'insertion si `pg_trigger_depth() < 2` (insertion directe), et fixe lui-même `contributor_id` et `recorded_at`.
 - **Assertions** : un trigger de contrainte différé, sur `assertion`, les tables de type et `assertion_citation`, écrit au commit **au plus une révision par assertion et par transaction** : il ne fait rien si une révision de cette assertion a déjà ce `recorded_at`. Comme il s'exécute au commit, l'instantané reflète l'état final. L'opération se **déduit** : `create` si l'assertion est née dans la transaction, `review_status_change` si seul le statut a changé, `correct` sinon.
-- **Observations** : trigger `AFTER INSERT … WHEN (NEW.import_batch_id IS NULL)` et `AFTER UPDATE`. Une insertion par lot n'appelle **aucune** fonction ligne par ligne : la clause `WHEN` s'évalue sans appel, et la révision du lot vaut pour toutes ses observations (ADR 0003). Une correction ultérieure crée une révision individuelle ; comme pour une assertion (§5.13), elle ramène une observation `validated` à `proposed` et laisse tout autre statut inchangé.
+- **Observations** : trigger `AFTER INSERT … WHEN (NEW.import_batch_id IS NULL)` et `AFTER UPDATE`. Une insertion par lot n'appelle **aucune** fonction ligne par ligne : la clause `WHEN` s'évalue sans appel, et la révision du lot vaut pour toutes ses observations (ADR 0003). Une correction ultérieure crée une révision individuelle ; comme pour une assertion (§5.13), elle ramène une observation `validated` à `proposed` et laisse tout autre statut inchangé, quel que soit le statut demandé par `atlas.review_status` (E14).
 - **Statut d'une observation** : une observation n'ayant pas de colonne de statut, son changement de statut sans changement de contenu (contestation, retrait, validation) passe par la fonction `set_observation_review_status(variable_id, observation_id, review_status, reason)`, `SECURITY INVOKER`. Elle écrit la révision individuelle de l'observation, avec le statut demandé et le motif ; la garde des statuts s'applique à cette révision. Les appelants n'écrivent jamais de mise à jour sans effet.
 - **Lots** : trigger `AFTER INSERT OR UPDATE OF batch_status` sur `import_batch`, qui écrit la révision du lot.
 
@@ -605,7 +605,7 @@ Correction du 2026-10-17. Une variable de session peut être renseignée par tou
 | `atlas_import` | Lecture de tout ; insertion des entités, événements, assertions et tables de type, citations, dates historiques, œuvres, observations, dérivations, lots ; correction et contestation. **Jamais** de validation |
 | `atlas_review` | Les droits d'`atlas_import`, plus les décisions : passage à `validated` ou `withdrawn` d'une assertion ou d'une observation, et à `validated`, `partially_validated` ou `rejected` d'un lot |
 
-Aucun des deux n'a de droit `DELETE` ni `TRUNCATE`, ni de droit de créer des objets (donc pas de trigger qui leur appartienne).
+Aucun des deux n'a de droit `DELETE` ni `TRUNCATE`, ni de droit de créer des objets (donc pas de trigger qui leur appartienne). Le droit `TEMPORARY` est retiré à `PUBLIC` sur la base (E14) : une table temporaire masquerait une table du schéma dans les fonctions `SECURITY INVOKER`, et un trigger posé sur elle contournerait la garde `pg_trigger_depth()` de `revision`. Les gardes d'identité et de statut (`current_contributor`, `batch_open_to_caller`, `check_review_status_transition`) ont en plus un `search_path` fixé. Le rapport de validation d'un lot ne s'écrit que par son responsable ou par le rôle de vérification.
 
 **Rôles de connexion** (`LOGIN`) : un par contributeur, membre d'un seul rôle de groupe, enregistré dans `contributor.db_role`. Un rôle de connexion membre d'`atlas_review` correspond à un contributeur `human`. Les rôles de connexion portent des mots de passe : ils ne sont **jamais créés par une migration** (rien de secret dans git), mais par un script qui demande le mot de passe de façon interactive.
 
@@ -746,6 +746,7 @@ Le modèle est figé pour la tranche 1 : cette révision passe par une nouvelle 
 | E11 | Codes des référentiels | Chargés par migration, avec les libellés des catégories | §5.1 |
 | E12 | N3 (copie archivée exigée à la validation), chargement de `db/reference/variables.toml` (N8) | Hors des migrations initiales, restent ouverts | `docs/backlog.md` |
 | E13 | Appartenance à un lot | Ajout seulement à son propre lot `proposed` (observations et révisions `create` d'assertions) ; lot d'une observation figé | §5.10 |
+| E14 | Durcissement des droits | Droit `TEMPORARY` retiré à `PUBLIC` ; `search_path` fixé sur les gardes ; une correction d'observation ignore le statut demandé ; rapport de lot réservé au responsable et au rôle de vérification | §5.11, §5.13 |
 
 ---
 
