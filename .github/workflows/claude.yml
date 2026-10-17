@@ -79,6 +79,19 @@ jobs:
           pnpm --dir apps/web exec playwright install --with-deps chromium
           uv sync --directory pipelines --locked
 
+      # Requis par CLAUDE_CODE_SUBPROCESS_ENV_SCRUB : l'action ne l'installe
+      # que pour allowed_non_write_users, que ce workflow n'utilise pas.
+      - name: Isolation des sous-processus (bubblewrap)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends bubblewrap
+          # Ubuntu 24.04 restreint les espaces de noms utilisateur non privilégiés.
+          # Levée sans effet réel sur ce runner éphémère, où sudo est déjà sans mot de
+          # passe ; c'est la condition pour que bwrap crée ses espaces de noms.
+          if [ -f /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+
       - uses: anthropics/claude-code-action@58985842b834ed26087302ba27d07bc24ca8697a # v1.0.244
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
