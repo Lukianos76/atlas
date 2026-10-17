@@ -18,7 +18,7 @@ title: ""
 
 ## Spec
 
-<!-- Lien vers docs/specs/<fichier>.md. Sans spec, ou spec au statut « proposé » : la rédiger ou la valider d'abord (/new-spec). -->
+<!-- Lien vers docs/specs/<fichier>.md. Sans spec, ou spec au statut « proposé » (sauf « Spec : sans objet » dans la roadmap) : la rédiger ou la valider d'abord (/new-spec en local, ou la commande « spec » du Mode CI de CLAUDE.md). -->
 
 ## Données et sources
 
