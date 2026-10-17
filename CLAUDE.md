@@ -2,6 +2,13 @@
 
 Atlas interactif et collaboratif qui raconte le monde par la carte : données démographiques, électorales et frontières historiques, du monde entier au quartier, chaque donnée étant datée, sourcée et rattachée au territoire tel qu'il existait à sa date.
 
+Piliers (détail : `docs/vision.md`) :
+- **Espace et temps** : naviguer du monde au quartier, et remonter les décennies et les siècles.
+- **Fiabilité** : chaque donnée est neutre, vérifiable et sourcée, à la manière de Wikipédia.
+- **Intelligence collective** : une communauté contribue, croise les sources et documente.
+
+Identité visuelle : fonds de carte sombres et épurés ; les données « éclairent » le territoire.
+
 ## Commandes
 
 Monorepo (ADR 0005). Node 26 (`.node-version`), Python 3.14 (`pipelines/.python-version`). Commandes lancées depuis la racine du repo.
@@ -24,7 +31,7 @@ Monorepo (ADR 0005). Node 26 (`.node-version`), Python 3.14 (`pipelines/.python-
 | Base de référence : migrer (sur `main` uniquement) | `bash scripts/db-ref-migrate.sh` |
 | **Tout vérifier** | `bash check.sh` (ou `--web`, `--pipelines`, `--db`, `--reuse`) |
 
-Un hook Claude Code (`.claude/settings.json`) formate et lint chaque fichier modifié : Biome sous `apps/web`, Ruff sous `pipelines`.
+Des hooks Claude Code (`.claude/settings.json`) formatent et lintent chaque fichier modifié (Biome sous `apps/web`, Ruff sous `pipelines`), puis vérifient les types (tsc, pyright) des composants modifiés à la fin de chaque réponse. Seules les modifications par Edit ou Write sont vues : `check.sh` reste la vérification qui fait foi.
 
 ## Règles non négociables
 
@@ -38,6 +45,39 @@ Un hook Claude Code (`.claude/settings.json`) formate et lint chaque fichier mod
 8. **Une branche par tâche.** Aucun commit direct sur la branche principale. Chaque commit porte la ligne `Signed-off-by` du DCO (`git commit -s`, ADR 0011).
 9. **Séparation des rôles.** Claude Code et les pipelines se connectent à la base de référence avec un rôle d'import : ils insèrent et proposent, ils ne valident jamais un lot ni une assertion. Seul un rôle de vérification, propre à un contributeur humain, passe un lot ou une assertion à `validated`. Ses identifiants, comme ceux du superutilisateur et du propriétaire du schéma, ne figurent jamais dans le `.env` ni dans un fichier lisible par les pipelines ou par Claude Code. Le contributeur enregistré est celui du rôle de connexion (`current_user`), jamais une valeur déclarée. Voir `docs/schema.md` §5.13.
 
+## Pilotage
+
+L'état du projet vit dans `docs/`, pas dans la conversation. Toute session reprend depuis ces fichiers.
+
+| Fichier | Rôle |
+|---|---|
+| `docs/roadmap.md` | Jalons engagés et tâches cochables, par ordre de priorité. Seule source de « quelle est la prochaine tâche ». |
+| `docs/backlog.md` | Réserve non engagée. Une entrée ne passe dans la roadmap qu'avec mon accord. |
+| `docs/specs/` | Une spec par fonctionnalité : objectif, critères d'acceptation, hors périmètre (`docs/specs/README.md`). |
+| `docs/adr/` | Décisions d'architecture. Un nouvel ADR est créé au statut « proposé ». |
+| `docs/data-sources.md` | Registre des jeux de données : source, licence, millésime, granularité, traitement, statut. |
+
+### Méthode
+
+- **Planifier avant d'implémenter.** Aucun code sans un plan que j'ai validé. Le plan signale les décisions qui me reviennent (règle 2).
+- **Ne jamais intégrer une donnée sans source** (règle 1). Toute nouvelle source entre d'abord dans `docs/data-sources.md` au statut « envisagée », et je valide son usage.
+- **Rien n'est « validé » sans mon accord explicite sur ce contenu.** Par défaut : « proposé ».
+- Avant un commit : `bash check.sh` complet sur l'état final, résultat et diff complet présentés ; je donne mon accord explicite, puis `git commit -s`.
+- À la fin d'une tâche : cocher la roadmap, mettre à jour la spec et le registre, et proposer un ADR si une décision d'architecture a été prise.
+
+### Commandes et sous-agents
+
+| Quand | Quoi |
+|---|---|
+| Passer à la tâche suivante | `/next-task` : planifier, attendre ma validation, implémenter, vérifier, relire, mettre à jour la roadmap |
+| Nouvelle fonctionnalité | `/new-spec` : m'interroger, rédiger la spec, l'ajouter à la roadmap |
+| Faire le point | `/project-status` |
+| Découper une tâche en étapes (lecture seule) | sous-agent `planner` |
+| Relire un diff avant commit | sous-agent `reviewer`, toujours |
+| Un diff touche des données, sources, fixtures, migrations de contenu, textes affichés | sous-agent `data-verifier`, en plus de `reviewer` |
+
+Les sous-agents n'ont ni Edit ni Write et ne lancent pas d'autres sous-agents ; leur Bash est limité à la lecture par leur consigne, pas techniquement. Leurs conclusions me sont rapportées telles quelles, même quand je ne les suis pas.
+
 ## Documents de référence
 
 Lire le document concerné **avant** de travailler sur le sujet. Leur contenu n'est pas recopié ici : en cas de doute, le document fait foi. Un écart au modèle ou à un ADR passe par une révision proposée du document, jamais directement par le code.
@@ -45,6 +85,9 @@ Lire le document concerné **avant** de travailler sur le sujet. Leur contenu n'
 | Sujet | Document |
 |---|---|
 | Finalité, public, identité visuelle | `docs/vision.md` |
+| Jalons et tâches engagés | `docs/roadmap.md` |
+| Spécifications des fonctionnalités | `docs/specs/` |
+| Registre des jeux de données | `docs/data-sources.md` |
 | Modèle conceptuel : entités, assertions, temps, géométries, événements, observations, points de vue | `docs/modele-donnees.md` |
 | Périmètre de la tranche 1 et questions ouvertes | `docs/modele-donnees.md` §14 |
 | Traduction des mouvements du COG | `docs/modele-donnees.md` §7.4 |
