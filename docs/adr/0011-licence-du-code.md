@@ -59,8 +59,8 @@ On retient l'**option C** pour le code, et une licence de contenu pour la docume
    - le dossier `LICENSES/` contient le texte de chaque licence employée, nommé par son identifiant SPDX. Les textes ont été obtenus par `reuse download` ;
    - `REUSE.toml` attribue les licences par chemin. Le dossier des extraits de test n'y reçoit volontairement aucune licence : chaque extrait doit y avoir sa propre table, avec la licence de sa source, sinon la vérification échoue ;
    - `check.sh --reuse` lance `reuse lint` (outil `reuse` 6.2.0, épinglé). La CI le lance sur chaque changement, sans filtre de chemins.
-5. **Contributions** : sous **DCO**, dès maintenant et pour tous, mainteneur compris. Chaque commit porte la ligne `Signed-off-by` (`git commit -s`). Les commits antérieurs à cette décision ne sont pas réécrits. Des conditions de contribution qui n'autorisent un changement de licence que vers une autre licence libre, alignées sur celles des données (politique éditoriale, §4.2), seront réexaminées avant de fusionner la première contribution extérieure (`docs/backlog.md`).
-6. **Lien vers le code source** dans l'interface : inscrit au backlog de la tranche 1.
+5. **Contributions** : sous **DCO**, dès maintenant et pour tous, mainteneur compris. Chaque commit porte la ligne `Signed-off-by` (`git commit -s`). Les commits antérieurs à cette décision ne sont pas réécrits. Des conditions de contribution qui n'autorisent un changement de licence que vers une autre licence libre, alignées sur celles des données (politique éditoriale, §4.2), seront réexaminées avant de fusionner la première contribution extérieure (`docs/roadmap.md`).
+6. **Lien vers le code source** dans l'interface : inscrit à la feuille de route de la tranche 1 (`docs/roadmap.md`, T3.5).
 
 ## Conséquences
 

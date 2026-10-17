@@ -134,7 +134,7 @@ GiST sur `core_range` pour les requêtes « valide à la date T » ; `max_range`
 
 - Les identifiants internes ne sont **jamais réutilisés ni réattribués**, y compris quand l'objet est retiré : un objet retiré garde son identifiant (P7), et une séquence d'identité ne revient jamais en arrière.
 - L'identifiant d'entité est **permanent** (modèle §4.1) et publié : il est l'identifiant des features dans les tuiles et la clé de jointure des fichiers de valeurs. Une publication citée ne reste vérifiable que si ces identifiants ne changent jamais.
-- Les identifiants dépendent de la **base de référence** : elle ne doit jamais être reconstruite par réimport. Elle est **sauvegardée hors de la machine dès le premier lot validé** ; la mise en place de cette sauvegarde est un prérequis au premier import de la tranche 1 (`docs/backlog.md`).
+- Les identifiants dépendent de la **base de référence** : elle ne doit jamais être reconstruite par réimport. Elle est **sauvegardée hors de la machine dès le premier lot validé** ; la mise en place de cette sauvegarde est un prérequis au premier import de la tranche 1 (`docs/roadmap.md`).
 - La base de développement attribue ses propres identifiants : aucun test ni extrait ne doit en dépendre.
 
 ---
@@ -627,7 +627,7 @@ Toute autre transition est refusée, notamment `proposed` → `contested` (une p
 **Identifiants** :
 - le `.env` lu par les pipelines et par Claude Code ne contient que les identifiants d'un rôle de connexion membre d'`atlas_import` ;
 - les identifiants d'un rôle de vérification ne figurent **jamais** dans le `.env` ni dans aucun fichier lisible par les pipelines ou par Claude Code : le vérificateur humain les saisit lui-même à la connexion ;
-- la séparation ne tient que si le **superutilisateur** et `atlas_owner` sont eux aussi hors de portée : un superutilisateur peut prendre n'importe quel rôle (§12, essai 4), et le propriétaire peut désactiver les triggers. Aujourd'hui, `ATLAS_REF_USER` dans `.env` est le superutilisateur créé par l'image PostGIS, et `scripts/db-ref-migrate.sh` s'en sert. Ses identifiants doivent sortir du `.env` avant le premier import (`docs/backlog.md`).
+- la séparation ne tient que si le **superutilisateur** et `atlas_owner` sont eux aussi hors de portée : un superutilisateur peut prendre n'importe quel rôle (§12, essai 4), et le propriétaire peut désactiver les triggers. Aujourd'hui, `ATLAS_REF_USER` dans `.env` est le superutilisateur créé par l'image PostGIS, et `scripts/db-ref-migrate.sh` s'en sert. Ses identifiants doivent sortir du `.env` avant le premier import (`docs/roadmap.md`).
 
 **Base de développement** : jetable, elle reçoit les mêmes rôles, avec des rôles de connexion d'essai dont les mots de passe, connus, figurent dans `.env.example` (accepté par le mainteneur le 2026-10-17). Ils n'existent pas sur la base de référence, et ses rôles n'ont rien en commun avec ceux-ci. Ils sont créés par `scripts/db-dev-roles.sh`, qui ne vise que le service `db-dev` : `atlas_dev_agent`, membre d'`atlas_import`, contributeur `agent` ; `atlas_dev_reviewer`, membre d'`atlas_review`, contributeur `human`. Le script enregistre leurs contributeurs dans la base visée ; `scripts/db-dev-reset.sh` et `check.sh` l'appellent.
 
@@ -744,7 +744,7 @@ Le modèle est figé pour la tranche 1 : cette révision passe par une nouvelle 
 | E9 | Rôles de connexion d'essai | `scripts/db-dev-roles.sh`, sur `db-dev` seulement | §5.13 |
 | E10 | Assertions d'un lot | Retrouvées par leur révision `create` ; propagation de la validation par trigger | §5.10 |
 | E11 | Codes des référentiels | Chargés par migration, avec les libellés des catégories | §5.1 |
-| E12 | N3 (copie archivée exigée à la validation), chargement de `db/reference/variables.toml` (N8) | Hors des migrations initiales, restent ouverts | `docs/backlog.md` |
+| E12 | N3 (copie archivée exigée à la validation), chargement de `db/reference/variables.toml` (N8) | Hors des migrations initiales, restent ouverts | `docs/roadmap.md` |
 | E13 | Appartenance à un lot | Ajout seulement à son propre lot `proposed` (observations et révisions `create` d'assertions) ; lot d'une observation figé | §5.10 |
 | E14 | Durcissement des droits | Droit `TEMPORARY` retiré à `PUBLIC` ; `search_path` fixé sur les gardes ; une correction d'observation ignore le statut demandé ; rapport de lot réservé au responsable et au rôle de vérification | §5.11, §5.13 |
 

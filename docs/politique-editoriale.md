@@ -167,7 +167,7 @@ Une source sous licence NC ou ND est **citable** : pour corroborer une assertion
 - **jamais extrait en masse** ;
 - **jamais redistribué**.
 
-Conséquence : la version 6 du projet COMMUNES (CC BY-NC 4.0) ne peut pas être importée. La version 2 (CC BY 4.0) reste à évaluer (`docs/backlog.md`).
+Conséquence : la version 6 du projet COMMUNES (CC BY-NC 4.0) ne peut pas être importée. La version 2 (CC BY 4.0) reste à évaluer (`docs/roadmap.md`).
 
 ### 4.5 Propagation dans les dérivations
 

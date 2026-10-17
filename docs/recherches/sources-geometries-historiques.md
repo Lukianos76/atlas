@@ -16,7 +16,7 @@ La population s'y affiche en **cercles proportionnels**, placés sur un point d�
 
 **Justification.** Le modèle sépare l'histoire des géométries de celle des données. Les observations originales restent rattachées aux communes de chaque époque, avec ou sans géométrie. La tranche 1 teste la seconde, l'histoire des données (entités, mouvements du COG, filiation, dérivations), sur des sources officielles et ouvertes. Aucune source de ce type ne fournit les contours historiques (§3 ci-dessous). Les géométries historiques sont donc reportées, sans bloquer le test du modèle.
 
-Pistes reportées : voir `docs/backlog.md`.
+Pistes reportées : voir `docs/roadmap.md`.
 
 ---
 

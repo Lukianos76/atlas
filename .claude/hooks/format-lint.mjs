@@ -1,6 +1,9 @@
-// Hook PostToolUse (Edit, Write, MultiEdit) : formate et lint le fichier modifié.
-// - apps/web : Biome (TypeScript, JavaScript, JSON, CSS) ;
-// - pipelines : Ruff (formatage puis lint avec corrections automatiques).
+// Hook PostToolUse (Edit, Write) : formate, lint et vérifie les types du fichier modifié.
+// - apps/web : Biome (TypeScript, JavaScript, JSON, CSS), puis tsc sur le projet
+//   TypeScript qui contient le fichier (tsc ne vérifie pas un fichier isolé selon le
+//   tsconfig) ;
+// - pipelines : Ruff (formatage puis lint avec corrections automatiques), puis pyright
+//   sur le fichier.
 // Code de sortie 2 si des erreurs subsistent : le message revient à Claude pour correction.
 // Outil absent (dépendances pas encore installées) : aucune action.
 import { spawnSync } from 'node:child_process';
@@ -34,6 +37,25 @@ function report(results) {
   process.exit(2);
 }
 
+// Projet TypeScript d'un fichier d'apps/web (chemin relatif à apps/web, séparateurs « / »),
+// selon les `include` de tsconfig.json et tsconfig.node.json ; null hors TypeScript.
+function tsconfigFor(target) {
+  if (!/\.tsx?$/.test(target)) {
+    return null;
+  }
+  if (target.startsWith('src/')) {
+    return 'tsconfig.json';
+  }
+  if (
+    target.startsWith('e2e/') ||
+    target === 'vite.config.ts' ||
+    target === 'playwright.config.ts'
+  ) {
+    return 'tsconfig.node.json';
+  }
+  return null;
+}
+
 const input = readInput();
 const filePath = input?.tool_input?.file_path;
 if (typeof filePath !== 'string' || !existsSync(filePath)) {
@@ -61,13 +83,19 @@ if (
     process.exit(0);
   }
   const target = path.relative(webDir, absolute);
-  report([
+  const results = [
     run(
       process.execPath,
       [biome, 'check', '--write', '--no-errors-on-unmatched', target],
       webDir,
     ),
-  ]);
+  ];
+  const tsconfig = tsconfigFor(target.split(path.sep).join('/'));
+  const tsc = path.join(webDir, 'node_modules', 'typescript', 'bin', 'tsc');
+  if (tsconfig !== null && existsSync(tsc)) {
+    results.push(run(process.execPath, [tsc, '-p', tsconfig], webDir));
+  }
+  report(results);
 } else if (relative.startsWith('pipelines/') && ['.py', '.pyi'].includes(extension)) {
   if (!existsSync(path.join(pipelinesDir, '.venv'))) {
     process.exit(0);
@@ -75,6 +103,8 @@ if (
   const target = path.relative(pipelinesDir, absolute);
   const format = run('uv', ['run', '--frozen', 'ruff', 'format', '--', target], pipelinesDir);
   const lint = run('uv', ['run', '--frozen', 'ruff', 'check', '--fix', '--', target], pipelinesDir);
-  report([format, lint]);
+  // pyright n'accepte pas `--` ; un nom commençant par « - » est déjà écarté plus haut.
+  const types = run('uv', ['run', '--frozen', 'pyright', target], pipelinesDir);
+  report([format, lint, types]);
 }
 process.exit(0);
