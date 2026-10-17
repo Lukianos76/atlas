@@ -2,10 +2,13 @@
 // - apps/web : Biome (TypeScript, JavaScript, JSON, CSS) ;
 // - pipelines : Ruff (formatage puis lint avec corrections automatiques).
 // Code de sortie 2 si des erreurs subsistent : le message revient à Claude pour correction.
-// Outil absent (dépendances pas encore installées) : aucune action.
+// Le composant touché est enregistré pour la vérification des types en fin de réponse
+// (typecheck.mjs).
+// Outil absent (dépendances pas encore installées, uv hors du PATH) : aucune action.
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import { markTouched } from './touched.mjs';
 
 const repoRoot = path.resolve(import.meta.dirname, '..', '..');
 
@@ -24,12 +27,17 @@ function run(command, args, cwd) {
 }
 
 function report(results) {
-  const failures = results.filter((result) => result.status !== 0);
+  // Exécutable introuvable (uv hors du PATH) : outil absent, aucune action.
+  const failures = results.filter(
+    (result) => result.error?.code !== 'ENOENT' && result.status !== 0,
+  );
   if (failures.length === 0) {
     process.exit(0);
   }
   for (const failure of failures) {
-    process.stderr.write(`${failure.stdout ?? ''}${failure.stderr ?? ''}`);
+    process.stderr.write(
+      `${failure.stdout ?? ''}${failure.stderr ?? ''}${failure.error?.message ?? ''}`,
+    );
   }
   process.exit(2);
 }
@@ -55,6 +63,7 @@ if (
   relative.startsWith('apps/web/') &&
   ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.json', '.jsonc', '.css'].includes(extension)
 ) {
+  markTouched(input.session_id, 'web');
   // Lanceur Node de Biome, appelé directement (pnpm.cmd exigerait un shell sous Windows).
   const biome = path.join(webDir, 'node_modules', '@biomejs', 'biome', 'bin', 'biome');
   if (!existsSync(biome)) {
@@ -69,6 +78,7 @@ if (
     ),
   ]);
 } else if (relative.startsWith('pipelines/') && ['.py', '.pyi'].includes(extension)) {
+  markTouched(input.session_id, 'pipelines');
   if (!existsSync(path.join(pipelinesDir, '.venv'))) {
     process.exit(0);
   }
