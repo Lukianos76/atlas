@@ -63,11 +63,16 @@ if (typeof filePath !== 'string' || !existsSync(filePath)) {
 }
 
 const absolute = path.resolve(filePath);
-// Chemin inattendu (option déguisée, caractères de contrôle) : on ne fait rien.
-if (path.basename(absolute).startsWith('-') || /[\u0000-\u001f]/.test(absolute)) {
+const relative = path.relative(repoRoot, absolute).split(path.sep).join('/');
+// Chemin inattendu (option déguisée, caractères de contrôle) : on ne fait rien. Chaque
+// segment est contrôlé, pas seulement le nom du fichier : le chemin passé aux outils
+// commence par le premier dossier (`-x/y.py` serait lu comme une option).
+if (
+  relative.split('/').some((segment) => segment.startsWith('-')) ||
+  /[\u0000-\u001f]/.test(absolute)
+) {
   process.exit(0);
 }
-const relative = path.relative(repoRoot, absolute).split(path.sep).join('/');
 const extension = path.extname(absolute);
 
 const webDir = path.join(repoRoot, 'apps', 'web');
