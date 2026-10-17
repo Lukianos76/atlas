@@ -8,7 +8,7 @@ Déroule la boucle suivante. **Les points d'arrêt marqués ⏸ terminent ta ré
 
 ## 1. Choisir
 
-- Lis `docs/roadmap.md`. Si `$ARGUMENTS` est donné, prends cette tâche ; sinon, la première tâche non cochée, ni bloquée ni en cours, du premier jalon non terminé.
+- Lis `docs/roadmap.md`. Si `$ARGUMENTS` est donné, prends cette tâche ; sinon, la première tâche non cochée, ni bloquée ni en cours, de la première phase non terminée. Une tâche annotée *mainteneur* n'est pas prise : signale-la comme étape qui attend le mainteneur, et passe à la suivante.
 - Vérifie `git status` : arbre propre, sur `main` à jour. Sinon, signale-le et ⏸.
 - Si la tâche n'a pas de spec, ou une spec au statut « proposé », propose `/new-spec` ou la validation de la spec, et ⏸.
 
