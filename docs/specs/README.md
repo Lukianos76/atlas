@@ -16,7 +16,7 @@ Une spec modifiée après validation repasse à « proposé ».
 
 Aucune spec pour l'instant.
 
-| Spec | Jalon | Statut |
+| Spec | Phase | Statut |
 |---|---|---|
 
 ## Gabarit
@@ -28,7 +28,7 @@ Fichier `docs/specs/<sujet-en-kebab-case>.md` :
 
 - **Statut** : proposé | validé | livré
 - **Date** : AAAA-MM-JJ
-- **Jalon** : <jalon de docs/roadmap.md>
+- **Phase** : <phase de docs/roadmap.md>
 - **Documents de référence** : <modèle §…, ADR …, politique §…>
 
 ## Objectif

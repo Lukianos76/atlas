@@ -1,6 +1,6 @@
 # Registre des sources de données
 
-> **Statut** : proposé, en attente de validation par le mainteneur.
+> **Statut** : validé par le mainteneur (2026-10-17).
 
 Vue de pilotage des **jeux de données** envisagés, retenus ou écartés. Ce registre ne remplace ni les œuvres sources ni les citations enregistrées dans la base (`docs/modele-donnees.md`, §9) : à l'import, c'est la base qui fait foi. Il sert à décider *avant* d'importer, et à savoir ce qu'il reste à vérifier.
 

@@ -51,7 +51,7 @@ L'état du projet vit dans `docs/`, pas dans la conversation. Toute session repr
 
 | Fichier | Rôle |
 |---|---|
-| `docs/roadmap.md` | Jalons engagés et tâches cochables, par ordre de priorité. Seule source de « quelle est la prochaine tâche ». |
+| `docs/roadmap.md` | Phases, tâches cochables par ordre de priorité, et chantiers continus. Seule source de « quelle est la prochaine tâche ». |
 | `docs/backlog.md` | Réserve non engagée. Une entrée ne passe dans la roadmap qu'avec mon accord. |
 | `docs/specs/` | Une spec par fonctionnalité : objectif, critères d'acceptation, hors périmètre (`docs/specs/README.md`). |
 | `docs/adr/` | Décisions d'architecture. Un nouvel ADR est créé au statut « proposé ». |
@@ -85,7 +85,7 @@ Lire le document concerné **avant** de travailler sur le sujet. Leur contenu n'
 | Sujet | Document |
 |---|---|
 | Finalité, public, identité visuelle | `docs/vision.md` |
-| Jalons et tâches engagés | `docs/roadmap.md` |
+| Phases et tâches engagées | `docs/roadmap.md` |
 | Spécifications des fonctionnalités | `docs/specs/` |
 | Registre des jeux de données | `docs/data-sources.md` |
 | Modèle conceptuel : entités, assertions, temps, géométries, événements, observations, points de vue | `docs/modele-donnees.md` |
