@@ -1,6 +1,6 @@
 # Spécifications des fonctionnalités
 
-Une spec par fonctionnalité, rédigée avant toute implémentation (commande `/new-spec`). Chaque tâche de `docs/roadmap.md` renvoie à sa spec.
+Une spec par fonctionnalité, rédigée avant toute implémentation (commande `/new-spec` en local, ou `@claude spec` dans une issue : CLAUDE.md, Mode CI). Chaque tâche de `docs/roadmap.md` renvoie à sa spec.
 
 ## Statuts
 

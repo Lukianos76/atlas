@@ -13,6 +13,7 @@ Conventions :
 
 - [x] **Mettre en place le pilotage par Claude Code** : sous-agents, skills, hooks, roadmap, specs, registre des sources. Spec : sans objet (plan validé en conversation). Branche `chore/pilotage-claude-code`.
 - [x] **Claude Code dans GitHub Actions** : workflow, gabarit d'issue, Mode CI. Spec : sans objet (plan validé en conversation). Branche `chore/claude-github-actions`.
+- [x] **Rédaction des specs en CI** (`@claude spec`, `@claude spec validée`). Spec : sans objet (plan validé en conversation). Branche `chore/claude-ci-specs`.
 
 ## Phase 1. Tranche 1 : le Bas-Rhin depuis 1968
 
