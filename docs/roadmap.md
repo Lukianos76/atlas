@@ -12,6 +12,7 @@ Conventions :
 ## Phase 0. Pilotage
 
 - [x] **Mettre en place le pilotage par Claude Code** : sous-agents, skills, hooks, roadmap, specs, registre des sources. Spec : sans objet (plan validé en conversation). Branche `chore/pilotage-claude-code`.
+- [x] **Claude Code dans GitHub Actions** : workflow, gabarit d'issue, Mode CI. Spec : sans objet (plan validé en conversation). Branche `chore/claude-github-actions`.
 
 ## Phase 1. Tranche 1 : le Bas-Rhin depuis 1968
 

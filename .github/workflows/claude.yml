@@ -1,0 +1,139 @@
+# Claude Code dans GitHub Actions (CLAUDE.md, section « Mode CI »).
+# Déclenché par « @claude » dans une issue ou une PR, par le mainteneur seul.
+# Authentification par l'abonnement Claude (token OAuth), jamais par clé API.
+name: Claude
+
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [opened]
+  pull_request_review_comment:
+    types: [created]
+
+# GITHUB_TOKEN en lecture seule : les écritures passent par le token de l'App
+# Claude, obtenu par OIDC et de portée explicite (additional_permissions).
+permissions:
+  contents: read
+
+jobs:
+  claude:
+    # Le mainteneur seul : login ET identifiant numérique (un login peut être
+    # renommé puis repris), auteur du commentaire ou de l'issue, et sujet ouvert
+    # par lui-même ou par Claude (« claude[bot] » : les crochets sont interdits
+    # dans un login humain, seul un bot d'App peut porter ce nom).
+    if: >-
+      github.actor == 'Lukianos76' && github.actor_id == '41002025' &&
+      github.triggering_actor == 'Lukianos76' &&
+      (
+        (github.event_name == 'issue_comment' &&
+          github.event.comment.user.id == 41002025 &&
+          contains(github.event.comment.body, '@claude') &&
+          (github.event.issue.user.id == 41002025 || github.event.issue.user.login == 'claude[bot]')) ||
+        (github.event_name == 'pull_request_review_comment' &&
+          github.event.comment.user.id == 41002025 &&
+          contains(github.event.comment.body, '@claude') &&
+          (github.event.pull_request.user.id == 41002025 || github.event.pull_request.user.login == 'claude[bot]')) ||
+        (github.event_name == 'issues' &&
+          github.event.issue.user.id == 41002025 &&
+          contains(github.event.issue.body, '@claude'))
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    # Au niveau du job : un événement écarté par le `if` n'entre pas dans le
+    # groupe, et ne peut donc pas annuler un run du mainteneur en attente.
+    concurrency:
+      group: claude-${{ github.event.issue.number || github.event.pull_request.number }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+      actions: read # lecture des résultats de CI par Claude
+      id-token: write # OIDC : échange contre le token de l'App Claude
+    env:
+      # Nettoyage, au mieux, des secrets Anthropic, cloud et GitHub Actions de
+      # l'environnement des commandes lancées par Claude (docs/security.md de l'action).
+      CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # historique complet pour le garde-fou d'immuabilité des migrations
+
+      # Outillage identique à ci.yml : check.sh et les hooks tournent comme en local.
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: apps/web/package.json
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          working-directory: pipelines
+          enable-cache: true
+      - name: Dépendances
+        run: |
+          pnpm --dir apps/web install --frozen-lockfile
+          pnpm --dir apps/web exec playwright install --with-deps chromium
+          uv sync --directory pipelines --locked
+
+      - uses: anthropics/claude-code-action@58985842b834ed26087302ba27d07bc24ca8697a # v1.0.244
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Seuls les commentaires du mainteneur et de Claude sont transmis.
+          include_comments_by_actor: Lukianos76,claude[bot]
+          # Portée explicite du token de l'App : contents, pull_requests, issues
+          # (écriture, par défaut) et actions (lecture), rien d'autre.
+          additional_permissions: |
+            actions: read
+          branch_prefix: claude/
+          # Outils MCP GitHub : ils doivent figurer ici pour que l'action démarre le serveur.
+          claude_args: |
+            --append-system-prompt "Tu tournes en CI : applique la section « Mode CI » de CLAUDE.md."
+            --allowedTools "mcp__github__get_issue,mcp__github__get_issue_comments,mcp__github__get_pull_request,mcp__github__create_pull_request"
+            --disallowedTools "mcp__github__merge_pull_request"
+          # Commandes autorisées en plus de celles de l'action (Read, Grep, Glob,
+          # git add/commit/rm, push par son script) ; l'édition de fichiers est
+          # permise dans le workspace par le mode acceptEdits de l'action.
+          settings: |
+            {
+              "permissions": {
+                "allow": [
+                  "Agent",
+                  "WebFetch",
+                  "WebSearch",
+                  "Bash(bash check.sh:*)",
+                  "Bash(pnpm --dir apps/web install:*)",
+                  "Bash(pnpm --dir apps/web add:*)",
+                  "Bash(pnpm --dir apps/web typecheck:*)",
+                  "Bash(pnpm --dir apps/web lint:*)",
+                  "Bash(pnpm --dir apps/web format:*)",
+                  "Bash(pnpm --dir apps/web test:*)",
+                  "Bash(pnpm --dir apps/web e2e:*)",
+                  "Bash(uv sync --directory pipelines:*)",
+                  "Bash(uv add --directory pipelines:*)",
+                  "Bash(uv run --directory pipelines ruff:*)",
+                  "Bash(uv run --directory pipelines pyright:*)",
+                  "Bash(uv run --directory pipelines pytest:*)",
+                  "Bash(git status:*)",
+                  "Bash(git diff:*)",
+                  "Bash(git log:*)",
+                  "Bash(git show:*)",
+                  "Bash(git mv:*)",
+                  "Bash(ls:*)"
+                ],
+                "deny": [
+                  "Bash(git push:*)",
+                  "Bash(git rebase:*)",
+                  "Bash(git reset:*)",
+                  "Bash(gh:*)",
+                  "Bash(curl:*)",
+                  "Bash(wget:*)",
+                  "Bash(docker:*)",
+                  "Edit(.github/workflows/**)",
+                  "Write(.github/workflows/**)"
+                ]
+              }
+            }
