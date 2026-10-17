@@ -1,6 +1,6 @@
 # Modèle de données conceptuel de l'atlas
 
-> **Statut** : version 3.1 (octobre 2026), figée pour la tranche 1. La version 3.1, validée le 2026-10-17, ajoute au §10.5 le contrôle « Version déjà importée » et le localisateur au niveau de la cellule (`docs/schema.md`, §8.4).
+> **Statut** : version 3.2 (octobre 2026), figée pour la tranche 1. La version 3.1, validée le 2026-10-17, ajoute au §10.5 le contrôle « Version déjà importée » et le localisateur au niveau de la cellule (`docs/schema.md`, §8.4). La version 3.2, validée le 2026-10-17, ajoute au cycle de vie des révisions (§10.1) le retour en relecture d'une assertion validée dont le contenu est corrigé (`docs/schema.md`, §8.5).
 > **Portée** : modèle **conceptuel** uniquement. Ce document ne retient aucune technologie de stockage, aucun format d'échange ni aucune bibliothèque. Les termes « entité », « attribut » et « relation » s'entendent au sens conceptuel.
 
 ---
@@ -587,12 +587,15 @@ stateDiagram-v2
     Proposee --> Validee : relecture
     Proposee --> Retiree : rejet motivé
     Validee --> Contestee : contestation sourcée
+    Validee --> Proposee : correction de contenu
     Contestee --> Validee : contestation rejetée
     Contestee --> Retiree : contestation admise
     Retiree --> Proposee : réouverture
 ```
 
 Une assertion **retirée** reste consultable dans l'historique. Elle ne s'affiche plus par défaut.
+
+Une correction du contenu d'une assertion **validée** la ramène à **proposée** : elle repasse en relecture. Aucune autre transition n'est admise : une proposition ne se conteste pas, elle se rejette ; une contestation se règle par une validation ou un retrait, jamais par un retour à **proposée**.
 
 ### 10.2 Préférence
 

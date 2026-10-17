@@ -1,6 +1,6 @@
 # Schéma logique de la base (tranche 1)
 
-> **Statut** : version 1 (octobre 2026), soumise à validation. Décisions D1 à D5, réponses A1 à A21 et points N1 à N11 validés par le mainteneur le 2026-10-17, ainsi que les corrections du même jour : séparation des rôles et sa limite assumée (§5.13), immutabilité des contenus volumineux (§5.4, §5.11), imports rejouables (§5.8, §5.10). Les essais sur la base de développement sont consignés en section 12.
+> **Statut** : version 1 (octobre 2026), soumise à validation. Décisions D1 à D5, réponses A1 à A21 et points N1 à N11 validés par le mainteneur le 2026-10-17, ainsi que les corrections du même jour : séparation des rôles et sa limite assumée (§5.13), immutabilité des contenus volumineux (§5.4, §5.11), imports rejouables (§5.8, §5.10). Révisions issues de la traduction en migrations validées le même jour (§8.5). Les essais sur la base de développement sont consignés en section 12.
 > **Portée** : conception **logique** du schéma PostgreSQL 18 + PostGIS pour le seul périmètre de la tranche 1 (`docs/modele-donnees.md`, §14.2) : population communale du Bas-Rhin, géographie communale du COG et son historique depuis 1968, géographie courante d'ADMIN EXPRESS, séries de l'INSEE en géographie courante (dérivations externes) et recalcul par le graphe de filiation. Ce document ne contient aucun SQL de migration : les migrations (ADR 0010) en découleront.
 > **Références** : modèle de données (v3.1), ADR 0003, 0004, 0009 et 0010, glossaire (v2), politique éditoriale (v1). En cas d'écart, ces documents font foi ; les révisions qu'il a entraînées sont regroupées en section 8.
 
@@ -13,7 +13,7 @@
 - **Vocabulaires fermés** du modèle (certitude, statut de révision, nature des bornes, nature d'une observation, rôle de participation, statut de lot, type de source…) : types `enum`. Ajouter une valeur (`ALTER TYPE … ADD VALUE`) reste compatible avec des migrations en avant uniquement ; une valeur n'est jamais retirée.
 - **Vocabulaires ouverts**, que le modèle dit extensibles (catégories d'entité, types de relation, types d'événement, référentiels) : tables de référence.
 - **Valeurs de données non traduites** (glossaire, §1) : statuts juridiques, noms de niveaux, types d'objet du COG (`COM`, `COMA`, `COMD`) restent des valeurs `text`.
-- **Rien n'est effacé** (P7). Un trigger `BEFORE DELETE` refuse toute suppression, sur toutes les tables, et les droits `DELETE` et `TRUNCATE` ne sont pas accordés. Seules exceptions : les tables de liaison des citations, dans une transaction révisée (§5.3), et la procédure d'activation des partitions (§6).
+- **Rien n'est effacé** (P7). Un trigger `BEFORE DELETE` refuse toute suppression, sur toutes les tables, un trigger `BEFORE TRUNCATE` refuse toute troncature (le propriétaire et le superutilisateur ne sont pas arrêtés par les droits), et les droits `DELETE` et `TRUNCATE` ne sont pas accordés. Seules exceptions : les tables de liaison des citations, dans une transaction révisée (§5.3), et la procédure d'activation des partitions (§6).
 - **Principe de stockage** (réponses du mainteneur, §7) : si le modèle prévoit qu'un fait puisse être contesté ou daté, c'est une **assertion** ; ce qui peut se **déduire** n'est pas stocké en double.
 - **Contenus volumineux immuables** : un contenu volumineux (géométrie, et tout contenu de taille comparable à venir : zones floues, récits) ne se corrige jamais sur place. Une correction retire l'assertion et en crée une nouvelle, comme pour les citations ; les instantanés de révision le référencent sans le recopier (§5.11).
 - **Séparation des rôles** : l'identité d'un contributeur est celle du rôle PostgreSQL de connexion (`current_user`), jamais une valeur déclarée ; seul le rôle de vérification valide (§5.13).
@@ -207,6 +207,8 @@ Sa validité est une assertion (`system_validity_assertion`, réponse A16). C'es
 
 **`relation_type`**, **`relation_subtype`**, **`event_type`** : tables de référence `(id smallint identité, code text UNIQUE)` ; `relation_subtype` porte en plus `relation_type_id`. Codes de la tranche 1 : `continuation_of`, avec les sous-types `restoration` et `usage_continuity` ; types d'événement du glossaire (§5).
 
+**Chargement** : les codes de la tranche 1 (catégories de premier niveau, types et sous-types de relation, types d'événement) sont chargés par la migration des référentiels. Libellés des catégories de premier niveau (validés le 2026-10-17) : `political` politique, `administrative` administrative, `statistical` statistique, `cultural` culturelle, `natural` naturelle, `place` lieu, `organization` organisation.
+
 **`historical_date`** : la date telle que la source l'écrit (modèle §3.1). Immuable.
 
 | Colonne | Type | Contraintes |
@@ -297,7 +299,7 @@ Index : `(subject_entity_id, assertion_type)`, `(subject_event_id, assertion_typ
 | `citation_role` | enum `citation_role` | `value`, `date`, `geometry`, `share` (proposés) |
 | | | clé primaire `(assertion_id, citation_id, citation_role)` |
 
-Une suppression de lien n'est admise que dans une transaction révisée (§5.11) ; le trigger différé vérifie alors qu'il reste au moins une citation.
+Une suppression de lien n'est admise que dans une transaction révisée (§5.11), c'est-à-dire une transaction qui renseigne le motif (`SET LOCAL atlas.reason`) ; le trigger différé vérifie alors qu'il reste au moins une citation, et la révision `correct` de l'assertion porte ce motif. Seul `assertion_citation` admet cette exception ; `observation_citation` n'en a pas besoin, une observation corrigée recevant une nouvelle citation sans perdre l'ancienne.
 
 ### 5.4 Assertions sur les entités
 
@@ -501,7 +503,7 @@ Une exécution de recalcul vaut pour une date source et une date de géographie 
 |---|---|---|
 | `id` | `integer` identité | clé primaire |
 | `citation_id` | `bigint` → `citation` | la citation du jeu de données, avec son millésime |
-| `owner_id` | `integer` → `contributor` | |
+| `owner_id` | `integer` → `contributor` | fixé par trigger au contributeur de `current_user`, jamais déclaré |
 | `reviewer_id` | `integer` | `NULL` |
 | `reviewer_kind` | enum `contributor_kind` | `NULL` |
 | `recorded_at` | `timestamptz` | fixé par trigger à `now()` |
@@ -524,6 +526,12 @@ Vérificateur (réponse A13), entièrement déclaratif :
 **Version de source déjà importée** (correction du 2026-10-17). Contrôle automatique obligatoire de la procédure d'import (modèle §10.5) : un nouveau lot est refusé, sans relecture, si un lot `validated` ou `partially_validated` couvre déjà la même version de la source (même `source_work`, donc même millésime) avec un périmètre qui recoupe le sien (même variable, territoires et périodes qui se chevauchent). Un lot `rejected` ne bloque pas : le lot corrigé est soumis comme un nouveau lot (§10.5, règle 5). Un erratum, publié comme une nouvelle version, est une autre œuvre et n'est pas bloqué. Le périmètre étant en `jsonb`, ce contrôle est fait par le pipeline d'import ; la base ne garantit que l'absence de doublon à l'intérieur d'un lot (§5.8). Révision proposée du modèle : §8.4.
 
 Le statut est historisé par les **révisions du lot** (réponse A12). Valider le lot passe au statut `validated` les assertions du lot encore au statut `proposed` (modèle §10.5), ce qui crée leurs révisions ; les observations du lot, elles, ne sont pas réécrites.
+
+**Assertions d'un lot.** `assertion` n'a pas de colonne de lot : les assertions d'un lot sont celles dont la révision `create` porte son `import_batch_id`, renseigné par `SET LOCAL atlas.import_batch_id` dans la transaction d'import. Le passage du lot à `validated` est propagé par le trigger `AFTER UPDATE OF batch_status` d'`import_batch`, sous le rôle du vérificateur, donc sous la même garde des statuts.
+
+**Appartenance à un lot** (E13). Un lot n'accueille de nouvelles données que tant qu'il est `proposed`, et seulement de son responsable : une observation n'est insérée que dans un tel lot (trigger par instruction sur `observation`, sans appel ligne par ligne), et une révision `create` d'assertion ne porte que l'identifiant d'un tel lot. Le lot d'une observation est ensuite figé. Sans cette garde, une observation versée dans un lot déjà validé prendrait son statut sans relecture.
+
+**Lot partiellement validé** (N4). Les observations écartées sont retirées (révision individuelle `withdrawn`) **avant** la décision `partially_validated`, tant que leur statut est `proposed` : après la décision elles valent `validated`, et `validated` → `withdrawn` n'est pas une transition admise (§5.13). Il en va de même des assertions écartées d'un lot.
 
 ### 5.11 Révisions
 
@@ -570,7 +578,8 @@ Index : `(assertion_id, recorded_at, id)`, `(observation_variable_id, observatio
 - Le reste du contexte est déclaratif, dans des variables `SET LOCAL` : `atlas.reason`, `atlas.import_batch_id`. Ces valeurs ne confèrent aucun droit.
 - `revision` ne reçoit que des lignes écrites par les triggers : un trigger `BEFORE INSERT` refuse l'insertion si `pg_trigger_depth() < 2` (insertion directe), et fixe lui-même `contributor_id` et `recorded_at`.
 - **Assertions** : un trigger de contrainte différé, sur `assertion`, les tables de type et `assertion_citation`, écrit au commit **au plus une révision par assertion et par transaction** : il ne fait rien si une révision de cette assertion a déjà ce `recorded_at`. Comme il s'exécute au commit, l'instantané reflète l'état final. L'opération se **déduit** : `create` si l'assertion est née dans la transaction, `review_status_change` si seul le statut a changé, `correct` sinon.
-- **Observations** : trigger `AFTER INSERT … WHEN (NEW.import_batch_id IS NULL)` et `AFTER UPDATE`. Une insertion par lot n'appelle **aucune** fonction ligne par ligne : la clause `WHEN` s'évalue sans appel, et la révision du lot vaut pour toutes ses observations (ADR 0003). Une correction ultérieure crée une révision individuelle.
+- **Observations** : trigger `AFTER INSERT … WHEN (NEW.import_batch_id IS NULL)` et `AFTER UPDATE`. Une insertion par lot n'appelle **aucune** fonction ligne par ligne : la clause `WHEN` s'évalue sans appel, et la révision du lot vaut pour toutes ses observations (ADR 0003). Une correction ultérieure crée une révision individuelle ; comme pour une assertion (§5.13), elle ramène une observation `validated` à `proposed` et laisse tout autre statut inchangé.
+- **Statut d'une observation** : une observation n'ayant pas de colonne de statut, son changement de statut sans changement de contenu (contestation, retrait, validation) passe par la fonction `set_observation_review_status(variable_id, observation_id, review_status, reason)`, `SECURITY INVOKER`. Elle écrit la révision individuelle de l'observation, avec le statut demandé et le motif ; la garde des statuts s'applique à cette révision. Les appelants n'écrivent jamais de mise à jour sans effet.
 - **Lots** : trigger `AFTER INSERT OR UPDATE OF batch_status` sur `import_batch`, qui écrit la révision du lot.
 
 ### 5.12 Vues
@@ -588,7 +597,7 @@ Index : `(assertion_id, recorded_at, id)`, `(observation_variable_id, observatio
 
 Correction du 2026-10-17. Une variable de session peut être renseignée par toute connexion : si le contributeur était déclaré, un agent pourrait valider son propre lot. L'identité d'un contributeur est donc celle de son **rôle de connexion**, et le droit de valider est attaché à un **rôle PostgreSQL**.
 
-**Rôles de groupe** (`NOLOGIN`), créés par migration :
+**Rôles de groupe** (`NOLOGIN`), créés par la première migration du schéma. Les rôles étant communs à toutes les bases d'un même serveur (`db-dev` porte la base de développement et la base jetable de `check.sh`), leur création est gardée : un rôle déjà présent n'est pas recréé. Les migrations sont lancées par dbmate avec le superutilisateur, qui crée les extensions (PostGIS l'exige) puis prend le rôle `atlas_owner` (`SET ROLE`) pour créer les objets, et le quitte en fin de migration (`RESET ROLE`). Le schéma `public` accorde `CREATE` à `atlas_owner`. Les droits des rôles de groupe sont accordés par la dernière migration du schéma.
 
 | Rôle | Droits |
 |---|---|
@@ -605,20 +614,22 @@ Aucun des deux n'a de droit `DELETE` ni `TRUNCATE`, ni de droit de créer des ob
 | Transition | `atlas_import` | `atlas_review` |
 |---|---|---|
 | création en `proposed` | oui | oui |
+| création dans un autre statut | non | non |
 | `validated` → `contested` (contestation sourcée) | oui | oui |
+| `validated` → `proposed` (correction de contenu) | oui | oui |
 | `withdrawn` → `proposed` (réouverture) | oui | oui |
 | `proposed` → `validated` ; `contested` → `validated` | non | oui |
 | `proposed` → `withdrawn` ; `contested` → `withdrawn` | non | oui |
 | lot `proposed` → `validated`, `partially_validated`, `rejected` | non | oui |
 
-Une correction de contenu sur une assertion `validated` la ramène à `proposed` : elle repasse en relecture.
+Toute autre transition est refusée, notamment `proposed` → `contested` (une proposition se rejette) et `contested` → `proposed` (une contestation se règle par `validated` ou `withdrawn`) : modèle §10.1, version 3.2. La validation est toujours une décision distincte de la création. Une correction de contenu sur une assertion `validated` la ramène à `proposed` : elle repasse en relecture ; sur une assertion dans un autre statut, elle laisse le statut inchangé.
 
 **Identifiants** :
 - le `.env` lu par les pipelines et par Claude Code ne contient que les identifiants d'un rôle de connexion membre d'`atlas_import` ;
 - les identifiants d'un rôle de vérification ne figurent **jamais** dans le `.env` ni dans aucun fichier lisible par les pipelines ou par Claude Code : le vérificateur humain les saisit lui-même à la connexion ;
 - la séparation ne tient que si le **superutilisateur** et `atlas_owner` sont eux aussi hors de portée : un superutilisateur peut prendre n'importe quel rôle (§12, essai 4), et le propriétaire peut désactiver les triggers. Aujourd'hui, `ATLAS_REF_USER` dans `.env` est le superutilisateur créé par l'image PostGIS, et `scripts/db-ref-migrate.sh` s'en sert. Ses identifiants doivent sortir du `.env` avant le premier import (`docs/backlog.md`).
 
-**Base de développement** : jetable, elle reçoit les mêmes rôles, avec des rôles de connexion d'essai dont les mots de passe, connus, figurent dans `.env.example` (accepté par le mainteneur le 2026-10-17). Ils n'existent pas sur la base de référence, et ses rôles n'ont rien en commun avec ceux-ci.
+**Base de développement** : jetable, elle reçoit les mêmes rôles, avec des rôles de connexion d'essai dont les mots de passe, connus, figurent dans `.env.example` (accepté par le mainteneur le 2026-10-17). Ils n'existent pas sur la base de référence, et ses rôles n'ont rien en commun avec ceux-ci. Ils sont créés par `scripts/db-dev-roles.sh`, qui ne vise que le service `db-dev` : `atlas_dev_agent`, membre d'`atlas_import`, contributeur `agent` ; `atlas_dev_reviewer`, membre d'`atlas_review`, contributeur `human`. Le script enregistre leurs contributeurs dans la base visée ; `scripts/db-dev-reset.sh` et `check.sh` l'appellent.
 
 **Connexions dans le conteneur de référence.** Le `pg_hba.conf` de l'image PostGIS accepte sans mot de passe (`trust`) les connexions locales et en boucle locale (constaté sur `db-dev`, même image : §12, essai 5) : `docker exec … psql` contournerait les rôles. Pour `db-ref`, un fichier versionné, `db/pg_hba-ref.conf`, exige `scram-sha-256` pour toute connexion, locale comprise. Il est monté en lecture seule et désigné par `-c hba_file` (`compose.yaml`), ce qui vaut aussi pour un volume déjà initialisé, contrairement à `POSTGRES_INITDB_ARGS`. Le contrôle de santé (`pg_isready`) ne s'authentifie pas et fonctionne toujours. `db-dev` garde la configuration de l'image.
 
@@ -716,6 +727,26 @@ Et préciser, dans les règles du lot, que le localisateur d'une valeur importé
 
 Le modèle est figé pour la tranche 1 : cette révision passe par une nouvelle version du document, après validation.
 
+### 8.5 Révisions issues des migrations
+
+Écarts relevés en traduisant ce document en migrations, validés par le mainteneur le 2026-10-17 et reportés dans les sections concernées. La révision E6 est aussi une révision du modèle (§10.1, version 3.2).
+
+| # | Point | Décision | Section |
+|---|---|---|---|
+| E1 | Ordre des migrations et dépendances | Table nue `event` créée avec les référentiels ; clé `observation.import_batch_id` ajoutée avec les lots ; rôles de groupe créés en premier, droits accordés en dernier | §5.13 |
+| E2 | Propriétaire des objets | Extensions créées par le superutilisateur, objets créés sous `SET ROLE atlas_owner` | §5.13 |
+| E3 | Rôles communs au serveur | Création gardée | §5.13 |
+| E4 | Responsable d'un lot | `owner_id` fixé par trigger au contributeur de `current_user` | §5.10 |
+| E5 | Statut d'une observation | Fonction `set_observation_review_status` ; une correction ramène à `proposed` | §5.11 |
+| E6 | Transitions de statut | Ajout de `validated` → `proposed` par une correction ; `proposed` → `contested` et `contested` → `proposed` refusés ; création dans un autre statut que `proposed` refusée | §5.13 ; modèle §10.1 |
+| E7 | Transaction révisée | Transaction qui renseigne `atlas.reason` | §5.3 |
+| E8 | Troncature | Trigger `BEFORE TRUNCATE` qui refuse, sur toutes les tables | §1 |
+| E9 | Rôles de connexion d'essai | `scripts/db-dev-roles.sh`, sur `db-dev` seulement | §5.13 |
+| E10 | Assertions d'un lot | Retrouvées par leur révision `create` ; propagation de la validation par trigger | §5.10 |
+| E11 | Codes des référentiels | Chargés par migration, avec les libellés des catégories | §5.1 |
+| E12 | N3 (copie archivée exigée à la validation), chargement de `db/reference/variables.toml` (N8) | Hors des migrations initiales, restent ouverts | `docs/backlog.md` |
+| E13 | Appartenance à un lot | Ajout seulement à son propre lot `proposed` (observations et révisions `create` d'assertions) ; lot d'une observation figé | §5.10 |
+
 ---
 
 ## 9. Points nouveaux issus de la conception
@@ -776,6 +807,15 @@ Validés le 2026-10-17 et ajoutés à `docs/glossaire.md` (version 2) (CLAUDE.md
 | tables de liaison | `assertion_citation`, `observation_citation`, `derivation_input`, `crosswalk_transfer` | Composés de termes existants |
 | rôle de connexion d'un contributeur | `db_role` | §5.13 |
 | rôles de groupe : propriétaire, import, vérification | `atlas_owner`, `atlas_import`, `atlas_review` | §5.13 |
+
+**Termes proposés par les migrations** (§8.5), **à valider** avant leur ajout au glossaire. Un type énuméré porte le nom de sa colonne ; quand deux colonnes de même nom ont des valeurs différentes, ou que le nom seul serait trop vague pour un objet global de la base, il est préfixé par sa table.
+
+| Français | Anglais | Justification |
+|---|---|---|
+| changer le statut d'une observation | `set_observation_review_status` | Fonction de E5, composée de termes du glossaire |
+| type énuméré de la méthode d'une géométrie | `geometry_method` | `method` existe aussi pour la dérivation, avec d'autres valeurs |
+| type énuméré de la méthode d'une dérivation | `derivation_method` | Idem |
+| type énuméré du rôle d'une participation | `participation_role` | `role` seul est trop vague comme nom de type global |
 
 ---
 

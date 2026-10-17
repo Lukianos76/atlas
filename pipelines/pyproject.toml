@@ -8,6 +8,7 @@ dependencies = []
 
 [dependency-groups]
 dev = [
+    "psycopg[binary]>=3.3.6",
     "pyright>=1.1.414",
     "pytest>=9.1.1",
     "ruff>=0.17.1",
@@ -34,3 +35,6 @@ venv = ".venv"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["--strict-markers", "--strict-config"]
+markers = [
+    "db: invariants du schéma, sur une base de db-dev désignée par ATLAS_TEST_DB (docs/schema.md)",
+]

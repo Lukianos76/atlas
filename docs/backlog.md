@@ -24,3 +24,10 @@ Origine : `docs/schema.md`, section 4.
 - [ ] **Sauvegarde hors de la machine de la base de référence.** Prérequis au premier import de la tranche 1 : la base doit être sauvegardée hors de la machine dès le premier lot validé. Ses identifiants internes, publiés dans les tuiles et les fichiers de valeurs, ne sont jamais réattribués : la base ne peut pas être reconstruite par réimport.
 - [ ] **Identifiants du superutilisateur hors du `.env`.** Prérequis au premier import de la tranche 1 (`docs/schema.md`, §5.13) : le `.env` lu par les pipelines et par Claude Code ne contient plus que les identifiants d'un rôle d'import. Le superutilisateur et `atlas_owner` sont saisis de façon interactive par `scripts/db-ref-migrate.sh`, parce qu'un superutilisateur peut prendre n'importe quel rôle et contourner la séparation des droits.
 - [ ] **Script de création des rôles de connexion.** Un rôle par contributeur, membre d'`atlas_import` ou d'`atlas_review`, avec un mot de passe demandé de façon interactive et jamais écrit dans un fichier du dépôt ; enregistrement du contributeur correspondant (`contributor.db_role`).
+
+## Schéma de la base
+
+Origine : `docs/schema.md`, sections 8.5 et 9.
+
+- [ ] **Copie archivée exigée à la validation (N3).** Déclencheur : *avec la procédure d'import de la tranche 1.* Contrôle, par le trigger de validation, de la copie archivée d'une citation lors du passage à `validated` (politique éditoriale §3.5), avec une colonne d'exception justifiée sur `citation`.
+- [ ] **Chargement du fichier des variables (N8).** Déclencheur : *première variable de la tranche 1.* Charger `db/reference/variables.toml` (seuils de discrétisation et leur justification, réponse A20) dans `variable`.

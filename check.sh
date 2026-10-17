@@ -91,7 +91,8 @@ fi
 
 # --- Base -------------------------------------------------------------------
 # Les migrations sont appliquées à une base jetable `atlas_check`, créée dans
-# db-dev puis supprimée. check ne touche jamais la base de référence.
+# db-dev, éprouvée par les tests des invariants, puis supprimée. check ne touche
+# jamais la base de référence.
 check_db_url() {
   local env_file="$REPO_ROOT/.env"
   [ -f "$env_file" ] || env_file="$REPO_ROOT/.env.example"
@@ -106,9 +107,15 @@ migrate_check_db() {
   dbmate_check create &&
     dbmate_check up &&
     dbmate_check status --exit-code
-  local status=$?
-  dbmate_check drop
-  return "$status"
+}
+
+# Tests des invariants du schéma (pipelines/tests/db), sur la base jetable, avec les
+# identifiants des rôles d'essai.
+test_check_db() {
+  local env_file="$REPO_ROOT/.env"
+  [ -f "$env_file" ] || env_file="$REPO_ROOT/.env.example"
+  # shellcheck disable=SC1090
+  (set -a; source "$env_file"; ATLAS_TEST_DB=atlas_check pipe pytest -m db)
 }
 
 if [ "$run_db" -eq 1 ]; then
@@ -116,6 +123,13 @@ if [ "$run_db" -eq 1 ]; then
   if command -v docker >/dev/null && docker info >/dev/null 2>&1; then
     step "db : démarrage de db-dev" compose up --detach --wait db-dev
     step "db : migrations sur une base jetable" migrate_check_db
+    step "db : rôles de connexion d'essai" bash scripts/db-dev-roles.sh atlas_check
+    if command -v uv >/dev/null; then
+      step "db : tests des invariants (pytest)" test_check_db
+    else
+      record "ÉCHEC" "db : uv absent, invariants du schéma non testés"
+    fi
+    step "db : suppression de la base jetable" dbmate_check drop
   else
     record "ÉCHEC" "db : Docker absent ou arrêté, migrations non vérifiées"
   fi
