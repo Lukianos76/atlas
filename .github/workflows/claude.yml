@@ -93,6 +93,7 @@ jobs:
           fi
 
       - uses: anthropics/claude-code-action@58985842b834ed26087302ba27d07bc24ca8697a # v1.0.244
+        id: claude
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # Seuls les commentaires du mainteneur et de Claude sont transmis.
@@ -152,3 +153,17 @@ jobs:
                 ]
               }
             }
+
+      # En cas d'échec ou d'interruption, affiche le seul message final du SDK
+      # (texte de l'erreur, ou dernière réponse de Claude), sans les sorties
+      # d'outils que show_full_output exposerait dans les logs publics.
+      - name: Cause de l'échec
+        if: failure() || cancelled()
+        env:
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file || format('{0}/claude-execution-output.json', runner.temp) }}
+        run: |
+          if [ -f "$EXECUTION_FILE" ]; then
+            jq -r '.[] | select(.type == "result") | "\(.subtype) : \((.result | select(. != "")) // .errors // "sans message")"' "$EXECUTION_FILE"
+          else
+            echo "Pas de fichier de sortie de Claude."
+          fi
