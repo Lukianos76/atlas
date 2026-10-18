@@ -26,7 +26,7 @@ Déroule la boucle suivante. **Les points d'arrêt marqués ⏸ terminent ta ré
 
 ## 4. Vérifier
 
-- `bash check.sh` complet sur l'état final (Docker démarré si besoin ; aucune étape sautée). Pour un lot d'import : contrôles §10.5. Pour des tuiles : contrôles d'export de l'ADR 0004.
+- `bash check.sh` complet sur l'état final (Docker démarré si besoin ; aucune étape sautée ; en CI, voir l'exception du bac à sable dans CLAUDE.md, Mode CI). Pour un lot d'import : contrôles §10.5. Pour des tuiles : contrôles d'export de l'ADR 0004.
 - Corrige et relance jusqu'à ce que tout soit OK. Si ce n'est pas possible, rapporte l'échec tel quel : la tâche n'est pas terminée.
 
 ## 5. Relire
