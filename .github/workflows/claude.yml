@@ -79,12 +79,12 @@ jobs:
           pnpm --dir apps/web exec playwright install --with-deps chromium
           uv sync --directory pipelines --locked
 
-      # Requis par CLAUDE_CODE_SUBPROCESS_ENV_SCRUB : l'action ne l'installe
-      # que pour allowed_non_write_users, que ce workflow n'utilise pas.
-      - name: Isolation des sous-processus (bubblewrap)
+      # Requis par CLAUDE_CODE_SUBPROCESS_ENV_SCRUB (bac à sable de Bash) : l'action
+      # ne les installe que pour allowed_non_write_users, que ce workflow n'utilise pas.
+      - name: Isolation des sous-processus (bubblewrap, socat)
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends bubblewrap
+          sudo apt-get install -y --no-install-recommends bubblewrap socat
           # Ubuntu 24.04 restreint les espaces de noms utilisateur non privilégiés.
           # Levée sans effet réel sur ce runner éphémère, où sudo est déjà sans mot de
           # passe ; c'est la condition pour que bwrap crée ses espaces de noms.
@@ -106,15 +106,20 @@ jobs:
           # Outils MCP GitHub : ils doivent figurer ici pour que l'action démarre le serveur.
           claude_args: |
             --append-system-prompt "Tu tournes en CI : applique la section « Mode CI » de CLAUDE.md."
-            --allowedTools "mcp__github__get_issue,mcp__github__get_issue_comments,mcp__github__get_pull_request,mcp__github__create_pull_request"
+            --allowedTools "mcp__github__get_issue,mcp__github__get_issue_comments,mcp__github__get_pull_request,mcp__github__list_pull_requests,mcp__github__search_pull_requests,mcp__github__create_pull_request"
             --disallowedTools "mcp__github__merge_pull_request"
           # Commandes autorisées en plus de celles de l'action (Read, Grep, Glob,
-          # git add/commit/rm, push par son script) ; l'édition de fichiers est
-          # permise dans le workspace par le mode acceptEdits de l'action.
+          # git add/commit/rm, push par son script). L'édition est autorisée
+          # explicitement, limitée au répertoire du repo : le mode acceptEdits de
+          # l'action n'a pas suffi (Write et Edit refusés au run 39122848362).
+          # Exclus : .github/workflows, .git (config, hooks) et .claude (hooks
+          # exécutés hors du bac à sable), modifiés seulement par le mainteneur.
           settings: |
             {
               "permissions": {
                 "allow": [
+                  "Edit(./**)",
+                  "Write(./**)",
                   "Agent",
                   "WebFetch",
                   "WebSearch",
@@ -149,7 +154,11 @@ jobs:
                   "Bash(wget:*)",
                   "Bash(docker:*)",
                   "Edit(.github/workflows/**)",
-                  "Write(.github/workflows/**)"
+                  "Write(.github/workflows/**)",
+                  "Edit(.git/**)",
+                  "Write(.git/**)",
+                  "Edit(.claude/**)",
+                  "Write(.claude/**)"
                 ]
               }
             }
