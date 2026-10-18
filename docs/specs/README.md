@@ -14,10 +14,9 @@ Une spec modifiée après validation repasse à « proposé ».
 
 ## Index
 
-Aucune spec pour l'instant.
-
 | Spec | Phase | Statut |
 |---|---|---|
+| [Migrations du schéma et tests de violation](migrations-schema.md) | 1. Tranche 1 | proposé |
 
 ## Gabarit
 

@@ -25,7 +25,7 @@ Conventions :
 
 ### Base
 
-- [ ] **Migrations du schéma et tests de violation**, sur la base de développement (`docs/schema.md`, §12). Spec : à rédiger.
+- [ ] **Migrations du schéma et tests de violation**, sur la base de développement (`docs/schema.md`, §12). Spec : [`docs/specs/migrations-schema.md`](specs/migrations-schema.md).
 - [ ] **Identifiants du superutilisateur hors du `.env`.** *Mainteneur.* Le `.env` lu par les pipelines et par Claude Code ne contient plus que les identifiants d'un rôle d'import. Le superutilisateur et `atlas_owner` sont saisis de façon interactive par `scripts/db-ref-migrate.sh`, parce qu'un superutilisateur peut prendre n'importe quel rôle et contourner la séparation des droits (`docs/schema.md`, §5.13). Spec : à rédiger.
 - [ ] **Rôles de connexion.** *Mainteneur.* Un rôle par contributeur, membre d'`atlas_import` ou d'`atlas_review`, avec un mot de passe demandé de façon interactive et jamais écrit dans un fichier du dépôt ; enregistrement du contributeur correspondant (`contributor.db_role`). Le script de création peut être préparé par Claude. Spec : à rédiger.
 - [ ] **Sauvegarde hors de la machine de la base de référence.** *Mainteneur.* La base doit être sauvegardée hors de la machine dès le premier lot validé. Ses identifiants internes, publiés dans les tuiles et les fichiers de valeurs, ne sont jamais réattribués : la base ne peut pas être reconstruite par réimport (`docs/schema.md`, section 4). Spec : à rédiger.
