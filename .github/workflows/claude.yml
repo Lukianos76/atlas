@@ -124,8 +124,20 @@ jobs:
           # Exclus d'Edit et Write : .github/workflows, .git (config, hooks), .claude,
           # .mcp.json (serveurs lancés hors du bac à sable, activés d'office par
           # l'action), les dépendances installées et les lockfiles.
+          # Bac à sable de Bash : réseau limité à PyPI (lecture seule ; reste un canal
+          # à faible débit par les statistiques de téléchargement, jugé acceptable) et
+          # écriture dans le cache de uv, pour l'outil REUSE que check.sh lance par uvx.
+          # Le socket Docker reste fermé (accès équivalent à root).
           settings: |
             {
+              "sandbox": {
+                "network": {
+                  "allowedDomains": ["pypi.org", "files.pythonhosted.org"]
+                },
+                "filesystem": {
+                  "allowWrite": ["${{ runner.temp }}/setup-uv-cache"]
+                }
+              },
               "permissions": {
                 "allow": [
                   "Edit(./**)",
