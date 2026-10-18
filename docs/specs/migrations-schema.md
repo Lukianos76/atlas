@@ -23,7 +23,7 @@ Chaque critère est éprouvé par `bash check.sh --db`, sur la base jetable.
 - [ ] Les migrations s'appliquent de bout en bout sur une base vide et `dbmate status --exit-code` réussit.
 - [ ] Les extensions `postgis` et `btree_gist` sont présentes.
 - [ ] Les rôles de groupe `atlas_owner`, `atlas_import` et `atlas_review` existent, sans `LOGIN`. Ni `atlas_import` ni `atlas_review` n'a de droit `DELETE` ni `TRUNCATE`, ni de droit de création sur le schéma ; `atlas_review` inclut les droits d'`atlas_import` ; un rôle de connexion d'essai ne peut être membre que d'un seul rôle de groupe.
-- [ ] Chaque table du §5 existe avec les colonnes et contraintes du schéma, comparées au catalogue PostgreSQL (méthode : voir D-b ; ce critère en dépend).
+- [ ] Chaque table du §5 existe avec les colonnes et contraintes du schéma, comparées au catalogue PostgreSQL (méthode retenue en D-b : fichier versionné des objets attendus).
 - [ ] Chacun des six `CHECK` de période (§3.2) refuse une ligne qui le viole et accepte une ligne conforme.
 - [ ] Chacune des quatre clés étrangères composites vers `historical_date` (§3.3) refuse une borne qui diffère de la date historique ; fin inconnue acceptée (§12, essais 3a à 3e).
 - [ ] P7 : `DELETE` et `TRUNCATE` sont refusés sur chaque table, y compris pour le propriétaire, sauf les tables de liaison des citations dans une transaction révisée (§5.3). L'autre exception du §1, la procédure d'activation des partitions (§6), est hors périmètre.
@@ -54,12 +54,16 @@ Aucune (schéma seul). Aucune entrée à ajouter à `docs/data-sources.md`.
 
 ## Décisions à prendre
 
-- **D-a. Découpage des migrations.** Recommandé : plusieurs migrations ordonnées par dépendance (extensions et rôles ; référentiels et sources ; temps et période ; assertions ; événements ; observations ; lots et révisions ; garde des statuts et droits). Alternative : une seule migration, plus difficile à relire.
-- **D-b. Liste des objets attendus.** Recommandé : un fichier versionné, dérivé du §5, que le test compare au catalogue PostgreSQL. Alternative : se contenter des tests de violation, sans liste ; l'existence des tables, colonnes et contraintes non éprouvées par un refus n'est alors pas vérifiée.
-- **D-c. Outil des tests.** Recommandé : fichiers SQL lancés par `psql` dans le conteneur, sans dépendance nouvelle. Alternatives (pgTAP, pytest) : une dépendance, que le mainteneur ajoute lui-même.
-- **D-d. Rôles de connexion d'essai.** Recommandé : créés par le script de test, avec les mots de passe connus de `.env.example` (§5.13), et supprimés ensuite ; jamais par migration (rien de secret dans git, et ils n'existent pas sur la base de référence).
-- **D-e. Lancement.** Recommandé : dans `check.sh --db`, sur la base jetable `atlas_check`, après les migrations.
+Toutes tranchées par le mainteneur le 2026-10-18 (commentaire de PR) : les recommandations sont retenues.
+
+- **D-a. Découpage des migrations.** Retenu : plusieurs migrations ordonnées par dépendance (extensions et rôles ; référentiels et sources ; temps et période ; assertions ; événements ; observations ; lots et révisions ; garde des statuts et droits). Écarté : une seule migration, plus difficile à relire.
+- **D-b. Liste des objets attendus.** Retenu : un fichier versionné, dérivé du §5, que le test compare au catalogue PostgreSQL.
+- **D-c. Outil des tests.** Retenu : fichiers SQL lancés par `psql` dans le conteneur, sans dépendance nouvelle.
+- **D-d. Rôles de connexion d'essai.** Retenu : créés par le script de test, avec les mots de passe connus de `.env.example` (§5.13), et supprimés ensuite ; jamais par migration (rien de secret dans git, et ils n'existent pas sur la base de référence).
+- **D-e. Lancement.** Retenu : dans `check.sh --db`, sur la base jetable `atlas_check`, après les migrations.
 
 ## Questions ouvertes
 
-- Rejouer les essais 1a à 1c du §12 (partitionnement) dans les tests, ou les laisser à la future migration d'activation ? Recommandé : les laisser, l'activation n'étant pas dans le périmètre.
+Aucune en attente.
+
+Résolue le 2026-10-18 (recommandation retenue) : les essais 1a à 1c du §12 (partitionnement) sont laissés à la future migration d'activation, hors périmètre.
