@@ -59,6 +59,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # historique complet pour le garde-fou d'immuabilité des migrations
+          # Sans jeton persistant : celui que checkout v7 laisse dans la config git
+          # n'est pas retiré par l'action et primait sur le token de l'App (push
+          # refusé en 403 au run de l'issue #8).
+          persist-credentials: false
 
       # Outillage identique à ci.yml : check.sh tourne comme en local (les hooks
       # sont désactivés, voir claude_args).
