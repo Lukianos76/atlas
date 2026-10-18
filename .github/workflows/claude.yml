@@ -60,7 +60,8 @@ jobs:
         with:
           fetch-depth: 0 # historique complet pour le garde-fou d'immuabilité des migrations
 
-      # Outillage identique à ci.yml : check.sh et les hooks tournent comme en local.
+      # Outillage identique à ci.yml : check.sh tourne comme en local (les hooks
+      # sont désactivés, voir claude_args).
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           package_json_file: apps/web/package.json
@@ -103,8 +104,12 @@ jobs:
           additional_permissions: |
             actions: read
           branch_prefix: claude/
+          # Hooks désactivés : ils s'exécutent hors du bac à sable de Bash et lancent
+          # du code du repo (node_modules, uv run) ; check.sh fait foi. Passé en
+          # ligne de commande, le réglage prime sur .claude/settings.json.
           # Outils MCP GitHub : ils doivent figurer ici pour que l'action démarre le serveur.
           claude_args: |
+            --settings '{"disableAllHooks": true}'
             --append-system-prompt "Tu tournes en CI : applique la section « Mode CI » de CLAUDE.md."
             --allowedTools "mcp__github__get_issue,mcp__github__get_issue_comments,mcp__github__get_pull_request,mcp__github__list_pull_requests,mcp__github__search_pull_requests,mcp__github__create_pull_request"
             --disallowedTools "mcp__github__merge_pull_request"
@@ -112,8 +117,9 @@ jobs:
           # git add/commit/rm, push par son script). L'édition est autorisée
           # explicitement, limitée au répertoire du repo : le mode acceptEdits de
           # l'action n'a pas suffi (Write et Edit refusés au run 39122848362).
-          # Exclus : .github/workflows, .git (config, hooks) et .claude (hooks
-          # exécutés hors du bac à sable), modifiés seulement par le mainteneur.
+          # Exclus d'Edit et Write : .github/workflows, .git (config, hooks), .claude,
+          # .mcp.json (serveurs lancés hors du bac à sable, activés d'office par
+          # l'action), les dépendances installées et les lockfiles.
           settings: |
             {
               "permissions": {
@@ -124,13 +130,13 @@ jobs:
                   "WebFetch",
                   "WebSearch",
                   "Bash(bash check.sh:*)",
-                  "Bash(pnpm --dir apps/web install:*)",
+                  "Bash(pnpm --dir apps/web install --frozen-lockfile)",
                   "Bash(pnpm --dir apps/web typecheck:*)",
                   "Bash(pnpm --dir apps/web lint:*)",
                   "Bash(pnpm --dir apps/web format:*)",
                   "Bash(pnpm --dir apps/web test:*)",
                   "Bash(pnpm --dir apps/web e2e:*)",
-                  "Bash(uv sync --directory pipelines:*)",
+                  "Bash(uv sync --directory pipelines --locked)",
                   "Bash(uv run --directory pipelines ruff:*)",
                   "Bash(uv run --directory pipelines pyright:*)",
                   "Bash(uv run --directory pipelines pytest:*)",
@@ -158,7 +164,17 @@ jobs:
                   "Edit(.git/**)",
                   "Write(.git/**)",
                   "Edit(.claude/**)",
-                  "Write(.claude/**)"
+                  "Write(.claude/**)",
+                  "Edit(**/node_modules/**)",
+                  "Write(**/node_modules/**)",
+                  "Edit(pipelines/.venv/**)",
+                  "Write(pipelines/.venv/**)",
+                  "Edit(apps/web/pnpm-lock.yaml)",
+                  "Write(apps/web/pnpm-lock.yaml)",
+                  "Edit(pipelines/uv.lock)",
+                  "Write(pipelines/uv.lock)",
+                  "Edit(.mcp.json)",
+                  "Write(.mcp.json)"
                 ]
               }
             }
